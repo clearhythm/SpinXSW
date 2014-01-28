@@ -1,20 +1,12 @@
+<!doctype html>
 <html>
   <head>
+    <meta charset="UTF-8">
+    <title>Spin</title>
     <style>
-      body {
-        font-family: "Helvetica Neue", helvetica, arial;
-        padding: 15px;
-      }
-
-      ul {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-      }
-
-      ul li {
-        line-height: 1.4;
-      }
+    body {
+      font-family: sans-serif;
+    }
     </style>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
     <script>
@@ -34,14 +26,25 @@
 //
 //
 
+    var recordedData = [];
+
     var recordDeviceMovement = function(){
       if ((window.DeviceMotionEvent) || ('listenForDeviceMovement' in window)) {
+        recordedData = [];
         window.addEventListener('devicemotion', deviceMotionHandler, false);
         $('#record').prop('disabled', true);
         $('#send').prop('disabled', false);
         $('#stop').prop('disabled', false);
       } else {
         $('body').prepend('<h2>Not supported on your device or browser.  Sorry.</h2>');
+      }
+    };
+
+    var sendRecordedDeviceMovement = function(){
+      if (recordedData.length) {
+        ws.send(recordedData);
+      } else {
+        alert('Nothing to send!');
       }
     };
 
@@ -53,31 +56,24 @@
     };
 
     var deviceMotionHandler = function(eventData) {
-      var info, xyz = "[X, Y, Z]";
+      var info = '';
 
-      // Grab the acceleration including gravity from the results
       var acceleration = eventData.acceleration;
-      info = xyz.replace("X", round(acceleration.x));
-      info = info.replace("Y", round(acceleration.y));
-      info = info.replace("Z", round(acceleration.z));
-      document.getElementById("moAccel").innerHTML = info;
+      info += round(acceleration.x);
+      info += ':' + round(acceleration.y);
+      info = ':' + round(acceleration.z);
 
-      // Grab the acceleration including gravity from the results
       acceleration = eventData.accelerationIncludingGravity;
-      info = xyz.replace("X", round(acceleration.x));
-      info = info.replace("Y", round(acceleration.y));
-      info = info.replace("Z", round(acceleration.z));
-      document.getElementById("moAccelGrav").innerHTML = info;
+      info += ':' + round(acceleration.x);
+      info += ':' + round(acceleration.y);
+      info = ':' + round(acceleration.z);
 
-      // Grab the acceleration including gravity from the results
       var rotation = eventData.rotationRate;
-      info = xyz.replace("X", round(rotation.alpha));
-      info = info.replace("Y", round(rotation.beta));
-      info = info.replace("Z", round(rotation.gamma));
-      document.getElementById("moRotation").innerHTML = info;
+      info += ':' + round(rotation.alpha);
+      info += ':' + round(rotation.beta);
+      info += ':' + round(rotation.gamma);
 
-      info = eventData.interval;
-      document.getElementById("moInterval").innerHTML = info;
+      recordedData.push(info);
     };
 
     var round = function(val) {
@@ -91,6 +87,7 @@
       });
 
       $('#send').on('click', function(){
+        sendRecordedDeviceMovement();
         stopRecordingDeviceMovement();
       });
 
