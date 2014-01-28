@@ -32,7 +32,7 @@
       console.log('onmessage', event);
       var id = dataSets.length;
       dataSets.push(event.data);
-      $('#sequences').append('<li><button class="showDataSet" data-data-set-id="' + id + '">Dataset ' + id + '</button></li>');
+      $('#sequences').append('<li><button class="showDataSet" data-data-set-id="' + id + '">Chart dataset ' + id + '</button><button class="broadcastDataSet" data-data-set-id="' + id + '">Broadcast dataset ' + id + '</button></li>');
     };
 
     var showDataSet = function(){
@@ -53,6 +53,11 @@
       $.plot($('#placeholder'), formattedData);
     };
 
+    var broadcastDataSet = function(){
+      var dataSetId = $(this).data('dataSetId');
+      sendRecordedDeviceMovement(dataSets[dataSetId]);
+    };
+
     var recordedData = [];
 
     var recordDeviceMovement = function(){
@@ -67,9 +72,9 @@
       }
     };
 
-    var sendRecordedDeviceMovement = function(){
-      if (recordedData.length) {
-        ws.send(recordedData.join(';'));
+    var sendRecordedDeviceMovement = function(data){
+      if (data.length) {
+        ws.send(data.join(';'));
       } else {
         alert('Nothing to send!');
       }
@@ -113,8 +118,10 @@
       });
 
       $('#send').off('click').on('click', function(){
-        sendRecordedDeviceMovement();
         stopRecordingDeviceMovement();
+        window.setTimeout(function(){
+          sendRecordedDeviceMovement(recordedData);
+        }, 100);
       });
 
       $('#stop').off('click').on('click', function(){
@@ -122,6 +129,7 @@
       });
 
       $('#sequences').off('click').on('click', '.showDataSet', showDataSet);
+      $('#sequences').off('click').on('click', '.showDataSet', broadcastDataSet);
     };
 
     init();
