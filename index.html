@@ -42,7 +42,7 @@
 
     var sendRecordedDeviceMovement = function(){
       if (recordedData.length) {
-        ws.send(recordedData);
+        ws.send(recordedData.join(';'));
       } else {
         alert('Nothing to send!');
       }
@@ -58,15 +58,17 @@
     var deviceMotionHandler = function(eventData) {
       var info = '';
 
-      var acceleration = eventData.acceleration;
-      info += round(acceleration.x);
-      info += ':' + round(acceleration.y);
-      info = ':' + round(acceleration.z);
-
-      acceleration = eventData.accelerationIncludingGravity;
-      info += ':' + round(acceleration.x);
-      info += ':' + round(acceleration.y);
-      info = ':' + round(acceleration.z);
+      if (eventData.acceleration) {
+        var acceleration = eventData.acceleration;
+        info += round(acceleration.x);
+        info += ':' + round(acceleration.y);
+        info = ':' + round(acceleration.z);
+      } else {
+        var acceleration = eventData.accelerationIncludingGravity;
+        info += round(acceleration.x);
+        info += ':' + round(acceleration.y);
+        info = ':' + round(acceleration.z);
+      }
 
       var rotation = eventData.rotationRate;
       info += ':' + round(rotation.alpha);
