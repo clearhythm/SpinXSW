@@ -12,15 +12,11 @@
     <script>
       var host = location.origin.replace(/^http/, 'ws')
       var ws = new WebSocket(host);
-//       ws.onmessage = function (event) {
-//         var li = document.createElement('li');
-//         li.innerHTML = JSON.parse(event.data);
-//         document.querySelector('#pings').appendChild(li);
-//       };
 
-//       var intId = window.setInterval(function(){
-//         ws.send('FYI: ' + Date.now());
-//       }, 1000);
+      ws.onmessage = function (event) {
+        console.log('onmessage', event);
+        $('#sequences').append('<li>' + JSON.parse(event.data) + '</li>');
+      };
 
 //
 //

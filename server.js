@@ -13,19 +13,31 @@ console.log('http server listening on %d', port);
 
 var wss = new WebSocketServer({server: server});
 console.log('websocket server created');
+
+var count = 0;
+var clients = {};
+
 wss.on('connection', function(ws) {
-//     var id = setInterval(function() {
-//         ws.send(JSON.stringify(new Date()), function() {  });
-//     }, 1000);
+  var id = count++;
+  clients[id] = connection;
 
-    console.log('websocket connection open');
+  console.log('websocket connection open, id=' + id);
 
-    ws.on('message', function(data, flags) {
-        console.log('received: %s', data);
-    });
+  ws.on('message', function(data, flags) {
+    console.log('received: %s', data);
+    wss.broadcast(data, id);
+  });
 
-    ws.on('close', function() {
-        console.log('websocket connection close');
-//         clearInterval(id);
-    });
+  ws.on('close', function() {
+    console.log('websocket connection closed, id=' + id + ', ip=' + ws.remoteAddress);
+    delete clients[id];
+  });
 });
+
+wss.broadcast = function(data, senderID) {
+  for (var i in this.clients) {
+    if (i !== senderID) {
+      this.clients[i].send(data);
+    }
+  }
+};
