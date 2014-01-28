@@ -19,7 +19,7 @@ var clients = {};
 
 wss.on('connection', function(ws) {
   var id = count++;
-  clients[id] = connection;
+  clients[id] = ws;
 
   console.log('websocket connection open, id=' + id);
 
