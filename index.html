@@ -46,7 +46,7 @@
       for (i = 0, l = dataSet.length; i < l; i++) {
         dataSet[i] = dataSet[i].split(':');
         for (j = 0, m = dataSet[i].length; j < m; j++) {
-          formattedData[j].data.push([i, parseFloat(dataSet[i][j])]);
+          formattedData[j].data.push([i * 0.05, parseFloat(dataSet[i][j])]);
         };
       };
 
@@ -83,19 +83,16 @@
     };
 
     var deviceMotionHandler = function(eventData) {
-      var info = '';
+      var data = [''];
 
       if (eventData.acceleration) {
         var acceleration = eventData.acceleration;
-        info += round(acceleration.x);
-        info += ':' + round(acceleration.y);
-        info += ':' + round(acceleration.z);
       } else {
         var acceleration = eventData.accelerationIncludingGravity;
-        info += round(acceleration.x);
-        info += ':' + round(acceleration.y);
-        info += ':' + round(acceleration.z);
       }
+      info += round(acceleration.x);
+      info += ':' + round(acceleration.y);
+      info += ':' + round(acceleration.z);
 
       var rotation = eventData.rotationRate;
       info += ':' + round(rotation.alpha);
