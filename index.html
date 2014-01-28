@@ -35,7 +35,7 @@
       $('#sequences').append('<li><button class="showDataSet" data-data-set-id="' + id + '">Dataset ' + id + '</button></li>');
     };
 
-    $('#sequences').off('click').on('click', '.showDataSet', function(){
+    var showDataSet = function(){
       var dataSetId = $(this).data('dataSetId');
 
       var dataSet = dataSets[dataSetId];
@@ -51,7 +51,7 @@
       };
 
       $.plot($('#placeholder'), formattedData);
-    });
+    };
 
     var recordedData = [];
 
@@ -63,7 +63,7 @@
         $('#send').prop('disabled', false);
         $('#stop').prop('disabled', false);
       } else {
-        $('body').prepend('<h2>Not supported on your device or browser.  Sorry.</h2>');
+        $('body').prepend('<h2>Recording is not supported on your device or browser.  Sorry.</h2>');
       }
     };
 
@@ -83,7 +83,7 @@
     };
 
     var deviceMotionHandler = function(eventData) {
-      var data = [''];
+      var info = '';
 
       if (eventData.acceleration) {
         var acceleration = eventData.acceleration;
@@ -120,6 +120,8 @@
       $('#stop').off('click').on('click', function(){
         stopRecordingDeviceMovement();
       });
+
+      $('#sequences').off('click').on('click', '.showDataSet', showDataSet);
     };
 
     init();
