@@ -16,19 +16,97 @@
         line-height: 1.4;
       }
     </style>
-
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
     <script>
       var host = location.origin.replace(/^http/, 'ws')
       var ws = new WebSocket(host);
-      ws.onmessage = function (event) {
-        var li = document.createElement('li');
-        li.innerHTML = JSON.parse(event.data);
-        document.querySelector('#pings').appendChild(li);
-      };
+//       ws.onmessage = function (event) {
+//         var li = document.createElement('li');
+//         li.innerHTML = JSON.parse(event.data);
+//         document.querySelector('#pings').appendChild(li);
+//       };
+
+//       var intId = window.setInterval(function(){
+//         ws.send('FYI: ' + Date.now());
+//       }, 1000);
+
+//
+//
+//
+
+    var recordDeviceMovement = function(){
+      if ((window.DeviceMotionEvent) || ('listenForDeviceMovement' in window)) {
+        window.addEventListener('devicemotion', deviceMotionHandler, false);
+        $('#record').prop('disabled', true);
+        $('#send').prop('disabled', false);
+        $('#stop').prop('disabled', false);
+      } else {
+        $('body').prepend('<h2>Not supported on your device or browser.  Sorry.</h2>');
+      }
+    };
+
+    var stopRecordingDeviceMovement = function(){
+      window.removeEventListener('devicemotion', deviceMotionHandler, false);
+      $('#record').prop('disabled', false);
+      $('#send').prop('disabled', true);
+      $('#stop').prop('disabled', true);
+    };
+
+    var deviceMotionHandler = function(eventData) {
+      var info, xyz = "[X, Y, Z]";
+
+      // Grab the acceleration including gravity from the results
+      var acceleration = eventData.acceleration;
+      info = xyz.replace("X", round(acceleration.x));
+      info = info.replace("Y", round(acceleration.y));
+      info = info.replace("Z", round(acceleration.z));
+      document.getElementById("moAccel").innerHTML = info;
+
+      // Grab the acceleration including gravity from the results
+      acceleration = eventData.accelerationIncludingGravity;
+      info = xyz.replace("X", round(acceleration.x));
+      info = info.replace("Y", round(acceleration.y));
+      info = info.replace("Z", round(acceleration.z));
+      document.getElementById("moAccelGrav").innerHTML = info;
+
+      // Grab the acceleration including gravity from the results
+      var rotation = eventData.rotationRate;
+      info = xyz.replace("X", round(rotation.alpha));
+      info = info.replace("Y", round(rotation.beta));
+      info = info.replace("Z", round(rotation.gamma));
+      document.getElementById("moRotation").innerHTML = info;
+
+      info = eventData.interval;
+      document.getElementById("moInterval").innerHTML = info;
+    };
+
+    var round = function(val) {
+      var amt = 10;
+      return Math.round(val * amt) /  amt;
+    };
+
+    var init = function(){
+      $('#record').on('click', function(){
+        recordDeviceMovement();
+      });
+
+      $('#send').on('click', function(){
+        stopRecordingDeviceMovement();
+      });
+
+      $('#stop').on('click', function(){
+        stopRecordingDeviceMovement();
+      });
+    };
     </script>
   </head>
   <body>
-    <h1>Pings</h1>
-    <ul id='pings'></ul>
+    <h1>Spin</h1>
+    <ul id='sequences'></ul>
+    <button id='record'>Record</button>
+    <button id='send' disabled>Send</button>
+    <button id='stop' disabled>Stop</button>
+
+    <script>init();</script>
   </body>
 </html>
