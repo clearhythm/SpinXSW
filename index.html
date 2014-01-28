@@ -62,12 +62,12 @@
         var acceleration = eventData.acceleration;
         info += round(acceleration.x);
         info += ':' + round(acceleration.y);
-        info = ':' + round(acceleration.z);
+        info += ':' + round(acceleration.z);
       } else {
         var acceleration = eventData.accelerationIncludingGravity;
         info += round(acceleration.x);
         info += ':' + round(acceleration.y);
-        info = ':' + round(acceleration.z);
+        info += ':' + round(acceleration.z);
       }
 
       var rotation = eventData.rotationRate;
