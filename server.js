@@ -21,7 +21,7 @@ wss.on('connection', function(ws) {
   var id = (count++).toString();
   clients[id] = ws;
 
-  console.log('websocket connection open, id=' + id + ', ip=' + ws.remoteAddress);
+  console.log('websocket connection open, id=' + id);
 
   ws.on('message', function(data, flags) {
     console.log('received from id=' + id +', the following message: ' + data);
@@ -29,7 +29,7 @@ wss.on('connection', function(ws) {
   });
 
   ws.on('close', function() {
-    console.log('websocket connection closed, id=' + id + ', ip=' + ws.remoteAddress);
+    console.log('websocket connection closed, id=' + id);
     delete clients[id];
   });
 });

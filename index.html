@@ -23,14 +23,23 @@
     <div id="placeholder" style="width:800px;height:600px"></div>
 
     <script>
-    var host = location.origin.replace(/^http/, 'ws')
-    var ws = new WebSocket(host);
-
     var dataSets = [];
+    var recordedData = [];
+    var ws;
 
-    ws.onmessage = function (event) {
-      console.log('onmessage', event);
-      addDataSet(event.data);
+    var openWebSocket = function(){
+      var host = location.origin.replace(/^http/, 'ws');
+      ws = new WebSocket(host);
+
+      ws.onclose = function (event) {
+        console.log('websocket connection closed, re-opening');
+        ws = new WebSocket(host);
+      };
+
+      ws.onmessage = function (event) {
+        console.log('onmessage', event);
+        addDataSet(event.data);
+      };
     };
 
     var addDataSet = function(data){
@@ -61,8 +70,6 @@
       var dataSetId = $(this).data('dataSetId');
       sendRecordedDeviceMovement(dataSets[dataSetId]);
     };
-
-    var recordedData = [];
 
     var recordDeviceMovement = function(){
       if ((window.DeviceMotionEvent) || ('listenForDeviceMovement' in window)) {
@@ -136,6 +143,8 @@
 
       $('#sequences').off('click', '.showDataSet').on('click', '.showDataSet', showDataSet);
       $('#sequences').off('click', '.broadcastDataSet').on('click', '.broadcastDataSet', broadcastDataSet);
+
+      openWebSocket();
     };
 
     init();
