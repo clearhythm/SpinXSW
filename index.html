@@ -23,7 +23,7 @@
       $('#sequences').append('<li><button class="showDataSet" data-data-set-id="' + id + '">Dataset ' + id + '</button></li>');
     };
 
-    $('.showDataSet').on('click', function(){
+    $('#sequences').on('click', '.showDataSet', function(){
       var dataSetId = $(this).data('dataSetId');
 
       var dataSet = dataSets[dataSetId];
@@ -175,7 +175,7 @@
 
     <ul id="sequences"></ul>
 
-    <canvas id="myChart" width="400" height="400"></canvas>
+    <canvas id="myChart" width="800" height="600"></canvas>
 
     <script>init();</script>
   </body>
