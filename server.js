@@ -21,10 +21,10 @@ wss.on('connection', function(ws) {
   var id = count++;
   clients[id] = ws;
 
-  console.log('websocket connection open, id=' + id);
+  console.log('websocket connection open, id=' + id + ', ip=' + ws.remoteAddress);
 
   ws.on('message', function(data, flags) {
-    console.log('received: %s', data);
+    console.log('received from id=' + id +', the following message: ' + data);
     wss.broadcast(data, id);
   });
 
@@ -35,8 +35,9 @@ wss.on('connection', function(ws) {
 });
 
 wss.broadcast = function(data, senderID) {
-  for (var i in this.clients) {
+  for (var i in clients) {
     if (i !== senderID) {
+      console.log('Broadcasting message to client id=' + i);
       this.clients[i].send(data);
     }
   }
