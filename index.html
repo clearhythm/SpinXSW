@@ -9,7 +9,7 @@
     }
     </style>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/Chart.js/0.2.0/Chart.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.min.js"></script>
   </head>
   <body>
     <h1>Spin</h1>
@@ -20,7 +20,7 @@
 
     <ul id="sequences"></ul>
 
-    <canvas id="myChart" width="800" height="600"></canvas>
+    <div id="placeholder" style="width:800px;height:600px"></div>
 
     <script>
     var host = location.origin.replace(/^http/, 'ws')
@@ -39,70 +39,18 @@
       var dataSetId = $(this).data('dataSetId');
 
       var dataSet = dataSets[dataSetId];
-      var formattedData = [[], [], [], [], [], []];
+      var formattedData = [{label: 'x', data: []}, {label: 'y', data: []}, {label: 'z', data: []}, {label: 'α', data: []}, {label: 'β', data: []}, {label: 'γ', data: []}];
       var labels = [];
       dataSet = dataSet.split(';');
       var i, l, j, m;
       for (i = 0, l = dataSet.length; i < l; i++) {
         dataSet[i] = dataSet[i].split(':');
         for (j = 0, m = dataSet[i].length; j < m; j++) {
-          formattedData[j].push(dataSet[i][j]);
+          formattedData[j].data.push([i, parseFloat(dataSet[i][j])]);
         };
-        labels.push('');
       };
 
-      var data = {
-        labels : labels,
-        datasets : [
-          {
-            fillColor : "rgba(220,220,220,0.5)",
-            strokeColor : "rgba(220,220,220,1)",
-            pointColor : "rgba(220,220,220,1)",
-            pointStrokeColor : "#fff",
-            data : formattedData[0]
-          },
-          {
-            fillColor : "rgba(151,187,205,0.5)",
-            strokeColor : "rgba(151,187,205,1)",
-            pointColor : "rgba(151,187,205,1)",
-            pointStrokeColor : "#fff",
-            data : formattedData[1]
-          },
-          {
-            fillColor : "rgba(220,220,220,0.5)",
-            strokeColor : "rgba(220,220,220,1)",
-            pointColor : "rgba(220,220,220,1)",
-            pointStrokeColor : "#fff",
-            data : formattedData[2]
-          },
-          {
-            fillColor : "rgba(151,187,205,0.5)",
-            strokeColor : "rgba(151,187,205,1)",
-            pointColor : "rgba(151,187,205,1)",
-            pointStrokeColor : "#fff",
-            data : formattedData[3]
-          },
-          {
-            fillColor : "rgba(220,220,220,0.5)",
-            strokeColor : "rgba(220,220,220,1)",
-            pointColor : "rgba(220,220,220,1)",
-            pointStrokeColor : "#fff",
-            data : formattedData[4]
-          },
-          {
-            fillColor : "rgba(151,187,205,0.5)",
-            strokeColor : "rgba(151,187,205,1)",
-            pointColor : "rgba(151,187,205,1)",
-            pointStrokeColor : "#fff",
-            data : formattedData[5]
-          }
-        ]
-      };
-
-      var ctx = $("#myChart").get(0).getContext("2d");
-      var myNewChart = new Chart(ctx).Line(data, {
-        animation: false
-      });
+      $.plot($('#placeholder'), formattedData);
     });
 
     var recordedData = [];
