@@ -10,6 +10,18 @@
     </style>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/Chart.js/0.2.0/Chart.min.js"></script>
+  </head>
+  <body>
+    <h1>Spin</h1>
+
+    <button id="record">Record</button>
+    <button id="send" disabled>Send</button>
+    <button id="stop" disabled>Stop</button>
+
+    <ul id="sequences"></ul>
+
+    <canvas id="myChart" width="800" height="600"></canvas>
+
     <script>
     var host = location.origin.replace(/^http/, 'ws')
     var ws = new WebSocket(host);
@@ -164,19 +176,8 @@
         stopRecordingDeviceMovement();
       });
     };
+
+    init();
     </script>
-  </head>
-  <body>
-    <h1>Spin</h1>
-
-    <button id="record">Record</button>
-    <button id="send" disabled>Send</button>
-    <button id="stop" disabled>Stop</button>
-
-    <ul id="sequences"></ul>
-
-    <canvas id="myChart" width="800" height="600"></canvas>
-
-    <script>init();</script>
   </body>
 </html>
