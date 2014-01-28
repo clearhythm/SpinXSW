@@ -35,7 +35,7 @@
       $('#sequences').append('<li><button class="showDataSet" data-data-set-id="' + id + '">Dataset ' + id + '</button></li>');
     };
 
-    $('#sequences').on('click', '.showDataSet', function(){
+    $('#sequences').off('click').on('click', '.showDataSet', function(){
       var dataSetId = $(this).data('dataSetId');
 
       var dataSet = dataSets[dataSetId];
@@ -108,16 +108,16 @@
     };
 
     var init = function(){
-      $('#record').on('click', function(){
+      $('#record').off('click').on('click', function(){
         recordDeviceMovement();
       });
 
-      $('#send').on('click', function(){
+      $('#send').off('click').on('click', function(){
         sendRecordedDeviceMovement();
         stopRecordingDeviceMovement();
       });
 
-      $('#stop').on('click', function(){
+      $('#stop').off('click').on('click', function(){
         stopRecordingDeviceMovement();
       });
     };
