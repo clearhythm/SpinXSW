@@ -18,7 +18,7 @@ var count = 0;
 var clients = {};
 
 wss.on('connection', function(ws) {
-  var id = count++;
+  var id = (count++).toString();
   clients[id] = ws;
 
   console.log('websocket connection open, id=' + id + ', ip=' + ws.remoteAddress);

@@ -30,8 +30,12 @@
 
     ws.onmessage = function (event) {
       console.log('onmessage', event);
+      addDataSet(event.data);
+    };
+
+    var addDataSet = function(data){
       var id = dataSets.length;
-      dataSets.push(event.data);
+      dataSets.push(data);
       $('#sequences').append('<li><button class="showDataSet" data-data-set-id="' + id + '">Chart dataset ' + id + '</button><button class="broadcastDataSet" data-data-set-id="' + id + '">Broadcast dataset ' + id + '</button></li>');
     };
 
@@ -74,7 +78,7 @@
 
     var sendRecordedDeviceMovement = function(data){
       if (data.length) {
-        ws.send(data.join(';'));
+        ws.send(data);
       } else {
         alert('Nothing to send!');
       }
@@ -120,7 +124,9 @@
       $('#send').off('click').on('click', function(){
         stopRecordingDeviceMovement();
         window.setTimeout(function(){
+          recordedData = recordedData.join(';');
           sendRecordedDeviceMovement(recordedData);
+          addDataSet(recordedData);
         }, 100);
       });
 
@@ -128,8 +134,8 @@
         stopRecordingDeviceMovement();
       });
 
-      $('#sequences').off('click').on('click', '.showDataSet', showDataSet);
-      $('#sequences').off('click').on('click', '.showDataSet', broadcastDataSet);
+      $('#sequences').off('click', '.showDataSet').on('click', '.showDataSet', showDataSet);
+      $('#sequences').off('click', '.broadcastDataSet').on('click', '.broadcastDataSet', broadcastDataSet);
     };
 
     init();
