@@ -1,22 +1,23 @@
 /* General */
 html { height: 100%; background-color: #000 }
 body { height: 100%; background-color: #000; color: #fff; text-align: center; font-family: 'Optima', Arial, sans-serif; }
+h1 { margin: 80px 0; font-size: 300% }
 
-/* Color Picker */
-.colors { list-style: none;  margin: 0 auto; width: 40% }
-.colors li { display: block; float: left; width: 40px; height: 40px; margin: 0 15px; border-radius: 20px; -moz-border-radius: 20px; cursor: pointer }
-.colors .one { background-color: white; }
-.colors .two { background-color: orange; }
-.colors .three { background-color: aqua; }
+/* Client Data Display */
+.raw_data { clear: both; margin: 0 auto; }
+.raw_data td { text-align: center }
 
-/* Virtual Lights */
-#lights { display: block; margin: 50px auto; }
+/* Virtual Light Display */
+#lights { display: block; margin: 50px auto 0 auto; }
 #lights .light { position: relative; float: left; margin: 0 10px; width: 24px; height: 10px; border: 1px solid #fff; background-color: transparent; }
 #lights .led { display: none; position: absolute; top: 0; left: 0; width: 24px; height: 10px; }
 
-/* Raw Data */
-.raw_data { clear: both; margin: 0 auto; padding-top: 40px; }
-.raw_data td { text-align: center }
+/* Switcher */
+.switcher { clear: both; padding-top: 100px; }
+.switcher button { font-size: 85%; }
+.switcher button:hover { cursor: pointer; }
 
 /* Helpers */
 .clear { clear: both; }
+.hide { display: none; }
+.hidden { visibilty: hidden; }
