@@ -15,17 +15,7 @@
   <body>
     <h1>Spin, Baby, Spin!</h1>
 
-    <button id="record">Record</button>
-    <button id="send" disabled>Send</button>
-    <button id="stop" disabled>Stop</button>
-
-    <ul id="sequences"></ul>
-
-    <div id="placeholder" style="width:800px;height:600px"></div>
-
     <script>
-    var dataSets = [];
-    var recordedData = [];
     var ws;
 
     var openWebSocket = function(){
@@ -34,112 +24,14 @@
 
       ws.onmessage = function (event) {
         console.log('onmessage', event);
-        addDataSet(event.data);
       };
     };
 
-    var addDataSet = function(data){
-      var id = dataSets.length;
-      dataSets.push(data);
-      $('#sequences').append('<li><button class="showDataSet" data-data-set-id="' + id + '">Chart dataset ' + id + '</button><button class="broadcastDataSet" data-data-set-id="' + id + '">Broadcast dataset ' + id + '</button></li>');
-    };
-
-    var showDataSet = function(){
-      var dataSetId = $(this).data('dataSetId');
-
-      var dataSet = dataSets[dataSetId];
-      var formattedData = [{label: 'x', data: []}, {label: 'y', data: []}, {label: 'z', data: []}, {label: 'α', data: []}, {label: 'β', data: []}, {label: 'γ', data: []}];
-      var labels = [];
-      dataSet = dataSet.split(';');
-      var i, l, j, m;
-      for (i = 0, l = dataSet.length; i < l; i++) {
-        dataSet[i] = dataSet[i].split(':');
-        for (j = 0, m = dataSet[i].length; j < m; j++) {
-          formattedData[j].data.push([i * 0.05, parseFloat(dataSet[i][j])]);
-        };
-      };
-
-      $.plot($('#placeholder'), formattedData);
-    };
-
-    var broadcastDataSet = function(){
-      var dataSetId = $(this).data('dataSetId');
-      sendRecordedDeviceMovement(dataSets[dataSetId]);
-    };
-
-    var recordDeviceMovement = function(){
-      if ((window.DeviceMotionEvent) || ('listenForDeviceMovement' in window)) {
-        recordedData = [];
-        window.addEventListener('devicemotion', deviceMotionHandler, false);
-        $('#record').prop('disabled', true);
-        $('#send').prop('disabled', false);
-        $('#stop').prop('disabled', false);
-      } else {
-        $('body').prepend('<h2>Recording is not supported on your device or browser.  Sorry.</h2>');
-      }
-    };
-
-    var sendRecordedDeviceMovement = function(data){
-      if (data.length) {
-        ws.send(data);
-      } else {
-        alert('Nothing to send!');
-      }
-    };
-
-    var stopRecordingDeviceMovement = function(){
-      window.removeEventListener('devicemotion', deviceMotionHandler, false);
-      $('#record').prop('disabled', false);
-      $('#send').prop('disabled', true);
-      $('#stop').prop('disabled', true);
-    };
-
-    var deviceMotionHandler = function(eventData) {
-      var info = '';
-
-      if (eventData.acceleration) {
-        var acceleration = eventData.acceleration;
-      } else {
-        var acceleration = eventData.accelerationIncludingGravity;
-      }
-      info += round(acceleration.x);
-      info += ':' + round(acceleration.y);
-      info += ':' + round(acceleration.z);
-
-      var rotation = eventData.rotationRate;
-      info += ':' + round(rotation.alpha);
-      info += ':' + round(rotation.beta);
-      info += ':' + round(rotation.gamma);
-
-      recordedData.push(info);
-    };
-
-    var round = function(val) {
-      var amt = 10;
-      return Math.round(val * amt) /  amt;
+    var sendMessage = function(data){
+       ws.send(data);
     };
 
     var init = function(){
-      $('#record').off('click').on('click', function(){
-        recordDeviceMovement();
-      });
-
-      $('#send').off('click').on('click', function(){
-        stopRecordingDeviceMovement();
-        window.setTimeout(function(){
-          recordedData = recordedData.join(';');
-          sendRecordedDeviceMovement(recordedData);
-          addDataSet(recordedData);
-        }, 100);
-      });
-
-      $('#stop').off('click').on('click', function(){
-        stopRecordingDeviceMovement();
-      });
-
-      $('#sequences').off('click', '.showDataSet').on('click', '.showDataSet', showDataSet);
-      $('#sequences').off('click', '.broadcastDataSet').on('click', '.broadcastDataSet', broadcastDataSet);
-
       openWebSocket();
     };
 
