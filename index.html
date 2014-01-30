@@ -3,11 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <title>Spin, Baby, Spin</title>
-    <style>
-    body {
-      font-family: sans-serif;
-    }
-    </style>
+	<link href="styles/global.css" rel="stylesheet" type="text/css">
     <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/flot/0.8.2/jquery.flot.min.js"></script>
     <script src="/js/lib/reconnecting-websocket.e86719bb55.js"></script>
@@ -15,9 +11,37 @@
   <body>
     <h1>Spin, Baby, Spin!</h1>
 
+    <h2>1. Pick your favorite color...</h2>
+    <ul class="colors">
+      <li class="one"></li>
+      <li class="two"></li>
+      <li class="three"></li>
+    </ul>
+    <div class="clear"></div>
+    <h2>2. Spin your body, spin the lights!</h2>
+    <div id="lights"></div>
+    <table class="raw_data">
+      <tr>
+        <td>Current angle</td>
+        <td>Total arc</td>
+        <td>Total rotations</td>
+      </tr>
+      <tr>
+        <td id="angle">0</td>
+        <td id="arc">0</td>
+        <td id="rotations">0</td>
+      </tr>
+    </table>
     <script>
+	// WebSockets
     var ws;
+	// Lights
+    var num_lights = 8;
+    var current_light = 0;
+    var current_color = 'rgb(255,255,255)';
+    var rotations, starting_angle;
 
+	// WebSockets
     var openWebSocket = function(){
       var host = location.origin.replace(/^http/, 'ws');
       ws = new ReconnectingWebSocket(host);
@@ -28,14 +52,99 @@
     };
 
     var sendMessage = function(data){
-       ws.send(data);
+    	ws.send(data);
     };
 
-    var init = function(){
-      openWebSocket();
-    };
+   var init = function(){
+     openWebSocket();
+  	 listenToDevice();
+   };
 
+	// Lights
+  var listenToDevice = function() {
+    if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', function(e) {
+        if (e.alpha == null) {
+          this.removeEventListener('deviceorientation',arguments.callee,false);
+          fallback();
+        }
+        else {
+          rotate(e.alpha);
+        }
+      }, false);
+    } else {
+      fallback();
+    }
+  }
+  
+  var initColors = function(){
+    $('.colors li').click(function(){
+      window.current_color = $(this).css('background-color');
+      $('.led').css('background-color',window.current_color);
+    })
+  }
+
+  var drawLights = function(num_lights){
+    var $lights = $('#lights');
+    $lights.width(num_lights*46); // note: '46' is a magic number which can be replaced with width + margin + border of each light
+    for (var i=0;i<num_lights;i++) {
+      $lights.append('<div class="light" id="light_'+i+'"></div>');
+    }
+  }
+  
+  var pulseLight = function(){
+    $current_light = $('#light_'+current_light);
+    $current_light.append('<div class="led"></div>')
+    $led = $current_light.find('.led');
+    blink($led);
+  }
+
+  var blink = function($jqe){
+    $jqe.fadeIn(1000,function(){
+      $jqe.fadeOut(1000,function(){
+        blink($jqe);
+      });
+    });
+  }
+
+  var fallback = function(){
+    console.log('Not supported');
+    alert('Sorry, your device is not supported');      
+  }
+
+  var rotate = function(deg) {
+    // normalize deg across devices
+    if (typeof(window.starting_angle) == "undefined") window.starting_angle = deg;
+    var deg = deg - window.starting_angle;
+    // calculate and show rotation data
+    showCurrentAngle(deg);
+    var arc = showTotalArc(deg);
+    showTotalRotations(arc);
+  }
+
+  var showCurrentAngle = function(deg){
+    $('#angle').html(deg);
+  }
+
+  var showTotalArc = function(deg){
+    // TODO: need to do some math here to set a threshold: when deg goes from 340-360 to 0-20 (or vice versa) we keep adding to the arc
+    var total_arc = deg;
+    $('#arc').html(total_arc);
+    return total_arc;
+  }
+
+  var showTotalRotations = function(arc){
+  	rotations = Math.floor(arc/360);
+    $('#rotations').html(rotations);
+    return rotations;
+  }
+
+  $(document).ready(function(){
     init();
-    </script>
+    initColors();
+    drawLights(num_lights);
+    pulseLight();
+  });
+	</script>
   </body>
 </html>

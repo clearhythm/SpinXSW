@@ -1,0 +1,22 @@
+/* General */
+html { height: 100%; background-color: #000 }
+body { height: 100%; background-color: #000; color: #fff; text-align: center; font-family: 'Optima', Arial, sans-serif; }
+
+/* Color Picker */
+.colors { list-style: none;  margin: 0 auto; width: 40% }
+.colors li { display: block; float: left; width: 40px; height: 40px; margin: 0 15px; border-radius: 20px; -moz-border-radius: 20px; cursor: pointer }
+.colors .one { background-color: white; }
+.colors .two { background-color: orange; }
+.colors .three { background-color: aqua; }
+
+/* Virtual Lights */
+#lights { display: block; margin: 50px auto; }
+#lights .light { position: relative; float: left; margin: 0 10px; width: 24px; height: 10px; border: 1px solid #fff; background-color: transparent; }
+#lights .led { display: none; position: absolute; top: 0; left: 0; width: 24px; height: 10px; }
+
+/* Raw Data */
+.raw_data { clear: both; margin: 0 auto; padding-top: 40px; }
+.raw_data td { text-align: center }
+
+/* Helpers */
+.clear { clear: both; }
