@@ -136,12 +136,13 @@ var showLights = function(){ // mock light rig for desktop testing of installati
 
 var setLightsListener = function(){
   if (typeof(current_light) == "undefined") current_light = 0; // set first light to show
-  alert('fools');
   ws.onmessage = function (event) { // respond to node.js notifications coming back
    // console.log('onmessage', event);
    var degrees = event.data;
    active_light = Math.floor(degrees / light_increment);
    // for now, only update the lights if user moves into a new light quadrant
+   console.log(active_light);
+   console.log(current_light);
    if (active_light != current_light) {
      current_light = active_light;
      $('.led').remove();
