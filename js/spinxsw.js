@@ -47,9 +47,6 @@ var init = function(){
   		// :: Installation Logic (& mock desktop light rig)
       initSwitcher('installation')
       showInstallationUI();
-			ws.onmessage = function (event) { // respond to node.js notifications coming back
-				console.log('onmessage', event);
-			};
   	}
   });
 }
@@ -134,7 +131,15 @@ var showLights = function(){ // mock light rig for desktop testing of installati
   	}
     $('#light_0').append('<div class="led"></div>');
     $('#light_0 .led').css('background-color',current_color);
+    setLightsListener();
   }
+}
+
+var setLightsListener = function(){
+  ws.onmessage = function (event) { // respond to node.js notifications coming back
+   console.log('onmessage', event);
+   $('#degrees').html(event.data);
+  };
 }
 
 // Init
