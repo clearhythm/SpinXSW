@@ -141,8 +141,6 @@ var setLightsListener = function(){
    var degrees = event.data;
    active_light = Math.floor(degrees / light_increment);
    // for now, only update the lights if user moves into a new light quadrant
-   alert(active_light);
-   alert(current_light);
    if (active_light != current_light) {
      current_light = active_light;
      $('.led').remove();
