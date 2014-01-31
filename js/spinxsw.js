@@ -122,6 +122,7 @@ var updateScreenCoordinates = function(deg) {
 var showLights = function(){ // mock light rig for desktop testing of installation
   // only add if they don't already exist
 	if ($('#lights').length == 0) {
+    alert('foo');
 	  $('#installation_ui').append('<div id="lights"></div>');
     var $lights = $('#lights');
   	$lights.width(num_lights*46); // note: '46' is a magic number which can be replaced with width + margin + border of each light
