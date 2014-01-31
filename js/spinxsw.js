@@ -9,10 +9,9 @@ var isMobile = navigator.userAgent.match(/(iPhone|iPod|iPad|Android|BlackBerry)/
 var data_frequency = 1; // polling interval at which to send client device data, '1' sends all data, '10' would be send every 10th data point
 // 
 var num_lights = 8;
-var current_light = 0;
 var current_color = 'rgb(102,255,255)'; // aqua
 var light_increment = 360 / num_lights;
-var rotations, starting_angle;
+var current_light, rotations, starting_angle;
 
 // Universal Functions
 var init = function(){
@@ -136,9 +135,16 @@ var showLights = function(){ // mock light rig for desktop testing of installati
 }
 
 var setLightsListener = function(){
+  if (typeof(current_light) == "undefined") current_light = 0; // set first light to show
   ws.onmessage = function (event) { // respond to node.js notifications coming back
-   console.log('onmessage', event);
-   $('#degrees').html(event.data);
+   // console.log('onmessage', event);
+   var degrees = event.data;
+   active_light = Math.floor(degrees / light_increment);
+   // for now, only update the lights if user moves into a new light quadrant
+   if (active_light != current_light) {
+     $('.led').remove();
+     $('#light_'+active_light).append('<div class="led"></div>');
+   }
   };
 }
 
