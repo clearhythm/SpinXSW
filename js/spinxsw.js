@@ -10,64 +10,62 @@ var data_frequency = 1; // polling interval at which to send client device data,
 // 
 var num_lights = 8;
 var current_light = 0;
-var current_color = 'rgb(0,255,255)'; // aqua
+var current_color = 'rgb(102,255,255)'; // aqua
+var light_increment = 360 / num_lights;
 var rotations, starting_angle;
 
 // Universal Functions
 var init = function(){
 	openWebSocket();
-	initSwitcher();
 	// Mobile Clients & Installation get different UIs and data logic
-	if (isMobile){
-		// :: Mobile Logic
-    showClientUI();
-		if (window.DeviceOrientationEvent) {
-			// listen for device orientation changes
-			window.addEventListener('deviceorientation', function(e) {
-				var client_angle = e.alpha;
-				if (client_angle != null) {
-					// if compass direction is available, send data to node server, and update screen to reflect which way user is pointing
-					if (typeof(window.starting_angle) == "undefined") window.starting_angle = deg;
-					client_angle = client_angle - window.starting_angle;
-					sendSensorData(client_angle);
-					updateScreenCoordinates(client_angle);
-				}
-				else {
-					this.removeEventListener('deviceorientation',arguments.callee,false);
-					fallback();
-				}
-			}, false);
-		} else {
-			fallback();
-		}
-	} else { 
-		// :: Installation Logic (& mock desktop light rig)
-    showInstallationUI();
-		$(document).ready(function(){
-			showMockLightRig();
+  $(document).ready(function(){
+  	if (isMobile){
+  		// :: Mobile Logic
+    	initSwitcher('client');
+      showClientUI();
+      if (window.DeviceOrientationEvent) {
+       // listen for device orientation changes
+       window.addEventListener('deviceorientation', function(e) {
+         var client_angle = e.alpha;
+         if (client_angle != null) {
+           // normalize compass direction across devices
+           if (typeof(window.starting_angle) == "undefined") window.starting_angle = client_angle;
+           var client_angle = Math.floor(Math.abs(client_angle - window.starting_angle));
+           // send compass angle to node server, and update screen to reflect which way user is pointing
+           sendSensorData(client_angle);
+           updateScreenCoordinates(client_angle);
+         }
+         else {
+           this.removeEventListener('deviceorientation',arguments.callee,false);
+           fallback();
+         }
+       }, false);
+      } else {
+       fallback();
+      }
+  	} else { 
+  		// :: Installation Logic (& mock desktop light rig)
+      initSwitcher('installation')
+      showInstallationUI();
 			ws.onmessage = function (event) { // respond to node.js notifications coming back
 				console.log('onmessage', event);
 			};
-		});
-	}
+  	}
+  });
 }
 
-var initSwitcher = function(){
-  $(document).ready(function(){
-    $('.switcher button').click(function(e){
-      var $span = $(this).find('span');
-      var my_view = $span.data('view');
-      if (my_view == 'client') {
-        $('#client_ui').hide();
-        $('#installation_ui').show();
-        $span.data('view', 'installation');
-      } else {
-        $('#installation_ui').hide();
-        $('#client_ui').show();
-        $span.data('view', 'client');
-      }
-      console.log(my_view);
-    });
+var initSwitcher = function(current_view){
+  setSwitcherLabel(current_view);
+  $('.switcher button').click(function(e){
+    var $span = $('#switcher_view');
+    var new_view = $span.html();
+    if (new_view == 'Client') {
+      showClientUI();
+      $span.html('Installation');
+    } else {
+      showInstallationUI();
+      $span.html('Client');
+    }
   });
 }
 
@@ -76,23 +74,25 @@ var openWebSocket = function(){
 	ws = new ReconnectingWebSocket(host);
 };
 
+var setSwitcherLabel = function(current_view){
+  var new_view = (current_view == 'installation') ? 'Client' : 'Installation';
+  $('#switcher_view').html(new_view);
+}
+
 var showClientUI = function(){
   $('#installation_ui').hide();
   $('#client_ui').show();
-  $('.switcher button span').data('view', 'installation');
-  $('.switcher button span').html('installation');
 }
 
 var showInstallationUI = function(){
   $('#client_ui').hide();
   $('#installation_ui').show();
-  $('.switcher button span').data('view', 'client');
-  $('.switcher button span').html('client');
+	showLights();
 }
 
 // Mobile Client Functions
 var fallback = function(){
-	$('#client_ui').html('<h2>Sorry, your device is not supported!</h2>');
+	$('#client_ui h1').html('Sorry, your device is not supported!');
 }
 
 var sendSensorData = function(deg) {
@@ -123,18 +123,18 @@ var updateScreenCoordinates = function(deg) {
 }
 
 // Installation Functions
-var drawLights = function(num_lights){
-	var $lights = $('#lights');
-	$lights.width(num_lights*46); // note: '46' is a magic number which can be replaced with width + margin + border of each light
-	for (var i=0;i<num_lights;i++) {
-		$lights.append('<div class="light" id="light_'+i+'"></div>');
-	}
-}
-
-var showMockLightRig = function(){
-	$('#client_ui').hide();
-	$('#installation_ui').show();
-	drawLights(num_lights); // mock light rig for desktop browser mode
+var showLights = function(){ // mock light rig for desktop testing of installation
+  // only add if they don't already exist
+	if ($('#lights').length == 0) {
+	  $('#installation_ui').append('<div id="lights"></div>');
+    var $lights = $('#lights');
+  	$lights.width(num_lights*46); // note: '46' is a magic number which can be replaced with width + margin + border of each light
+  	for (var i=0;i<num_lights;i++) {
+  		$lights.append('<div class="light" id="light_'+i+'"></div>');
+  	}
+    $('#light_0').append('<div class="led"></div>');
+    $('#light_0 .led').css('background-color',current_color);
+  }
 }
 
 // Init
