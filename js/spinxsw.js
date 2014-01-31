@@ -122,7 +122,6 @@ var updateScreenCoordinates = function(deg) {
 var showLights = function(){ // mock light rig for desktop testing of installation
   // only add if they don't already exist
 	if ($('#lights').length == 0) {
-    alert('foo');
 	  $('#installation_ui').append('<div id="lights"></div>');
     var $lights = $('#lights');
   	$lights.width(num_lights*46); // note: '46' is a magic number which can be replaced with width + margin + border of each light
@@ -137,6 +136,7 @@ var showLights = function(){ // mock light rig for desktop testing of installati
 
 var setLightsListener = function(){
   if (typeof(current_light) == "undefined") current_light = 0; // set first light to show
+  alert('fools');
   ws.onmessage = function (event) { // respond to node.js notifications coming back
    // console.log('onmessage', event);
    var degrees = event.data;
