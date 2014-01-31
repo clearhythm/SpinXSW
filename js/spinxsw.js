@@ -129,7 +129,7 @@ var showLights = function(){ // mock light rig for desktop testing of installati
   		$lights.append('<div class="light" id="light_'+i+'"></div>');
   	}
     $('#light_0').append('<div class="led"></div>');
-    $('#light_0 .led').css('background-color',current_color);
+    $('.led').css('background-color',current_color);
     setLightsListener();
   }
 }
@@ -146,6 +146,7 @@ var setLightsListener = function(){
    if (active_light != current_light) {
      $('.led').remove();
      $('#light_'+active_light).append('<div class="led"></div>');
+     $('.led').css('background-color',current_color);
    }
   };
 }
