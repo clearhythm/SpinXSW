@@ -139,8 +139,8 @@ var setLightsListener = function(){
   if (typeof(current_light) == "undefined") current_light = 0; // set first light to show
   ws.onmessage = function (event) { // respond to node.js notifications coming back
    // console.log('onmessage', event);
-   var degrees = event.broadcast_data.data;
-   console.log('event data', event.broadcast_data);
+   var degrees = event.data.data;
+   console.log('event data', event.data);
    active_light = Math.floor(degrees / light_increment);
    // for now, only update the lights if user moves into a new light quadrant
    if (active_light != current_light) {
