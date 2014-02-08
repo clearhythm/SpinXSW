@@ -30,7 +30,7 @@ var init = function(){
            // normalize compass direction across devices
            if (typeof(window.starting_angle) == "undefined") window.starting_angle = client_angle;
            var client_angle = Math.floor(Math.abs(client_angle - window.starting_angle));
-           var client_angle = Math.abs(client_angle - 360); // flip orientation so angles go more positive as user rotates clockwise
+           var client_angle = Math.abs(360 - client_angle); // flip orientation so angles go more positive as user rotates clockwise
            // send compass angle to node server, and update screen to reflect which way user is pointing
            sendSensorData(client_angle);
            updateScreenCoordinates(client_angle);
