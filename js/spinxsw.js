@@ -79,14 +79,20 @@ var setSwitcherLabel = function(current_view){
 var showClientUI = function(){
   $('#installation_ui').hide();
   $('#client_ui').show();
-  window.setTimeout(function(){ ws.send(JSON.stringify({register: 'client'})); }, 200);
+  ws.onopen = function(){
+    console.log('registering self as client');
+    ws.send(JSON.stringify({register: 'client'}));
+  };
 }
 
 var showInstallationUI = function(){
   $('#client_ui').hide();
   $('#installation_ui').show();
   showLights();
-  window.setTimeout(function(){ ws.send(JSON.stringify({register: 'installation'})); }, 200);
+  ws.onopen = function(){
+    console.log('registering self as installation');
+    ws.send(JSON.stringify({register: 'installation'}));
+  };
 };
 
 // Mobile Client Functions
