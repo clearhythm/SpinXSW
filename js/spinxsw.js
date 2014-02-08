@@ -8,7 +8,7 @@ var ws;
 var isMobile = navigator.userAgent.match(/(iPhone|iPod|iPad|Android|BlackBerry)/) || false;
 var data_frequency = 1; // polling interval at which to send client device data, '1' sends all data, '10' would be send every 10th data point
 // 
-var num_lights = 12;
+var num_lights = 18;
 var current_color = 'rgb(102,255,255)'; // aqua
 var light_increment = 360 / num_lights;
 var current_light, rotations, starting_angle;
@@ -30,6 +30,7 @@ var init = function(){
            // normalize compass direction across devices
            if (typeof(window.starting_angle) == "undefined") window.starting_angle = client_angle;
            var client_angle = Math.floor(Math.abs(client_angle - window.starting_angle));
+           var client_angle = Math.abs(client_angle - 360); // flip orientation so angles go more positive as user rotates clockwise
            // send compass angle to node server, and update screen to reflect which way user is pointing
            sendSensorData(client_angle);
            updateScreenCoordinates(client_angle);
