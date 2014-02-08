@@ -8,7 +8,7 @@ var ws;
 var isMobile = navigator.userAgent.match(/(iPhone|iPod|iPad|Android|BlackBerry)/) || false;
 var data_frequency = 1; // polling interval at which to send client device data, '1' sends all data, '10' would be send every 10th data point
 // 
-var num_lights = 8;
+var num_lights = 12;
 var current_color = 'rgb(102,255,255)'; // aqua
 var light_increment = 360 / num_lights;
 var current_light, rotations, starting_angle;
