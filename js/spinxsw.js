@@ -140,7 +140,7 @@ var setLightsListener = function(){
   ws.onmessage = function (event) { // respond to node.js notifications coming back
    // console.log('onmessage', event);
    var degrees = event.data.data;
-   console.log('event data', event.data);
+   console.log('event data', event);
    active_light = Math.floor(degrees / light_increment);
    // for now, only update the lights if user moves into a new light quadrant
    if (active_light != current_light) {
