@@ -41,6 +41,7 @@ wss.broadcast = function(data, senderID) {
   for (var i in clients) {
     if (i !== senderID) {
       console.log('Broadcasting message to client id=' + i);
+      console.log(broadcast_data);
       clients[i].send(broadcast_data);
     }
   }
