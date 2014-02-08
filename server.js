@@ -19,13 +19,20 @@ var clients = {};
 
 wss.on('connection', function(ws) {
   var id = (count++).toString();
-  clients[id] = ws;
+  clients[id] = {
+    ws: ws
+  };
 
   console.log('websocket connection open, id=' + id);
 
   ws.on('message', function(data, flags) {
     console.log('received from id=' + id +', the following message: ' + data);
-    wss.broadcast(data, id);
+    var message = JSON.stringify(data);
+    if (message.register) {
+      clients[id].type = message.register;
+    } else {
+      wss.broadcast(data, id);
+    }
   });
 
   ws.on('close', function() {
@@ -39,11 +46,11 @@ wss.broadcast = function(data, senderID) {
     data: data,
     senderID: senderID
   });
-  for (var i in clients) {
-    if (i !== senderID) {
-      console.log('Broadcasting message to client id=' + i);
+  for (var id in clients) {
+    if (clients[id].type && clients[id].type === 'installation' && id !== senderID) {
+      console.log('Broadcasting message to client id=' + id);
       console.log(broadcast_data);
-      clients[i].send(broadcast_data);
+      clients[id].ws.send(broadcast_data);
     }
   }
 };

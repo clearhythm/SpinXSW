@@ -79,12 +79,14 @@ var setSwitcherLabel = function(current_view){
 var showClientUI = function(){
   $('#installation_ui').hide();
   $('#client_ui').show();
+  window.setTimeout(function(){ ws.send(JSON.stringify({register: 'client'})); }, 200);
 }
 
 var showInstallationUI = function(){
   $('#client_ui').hide();
   $('#installation_ui').show();
   showLights();
+  window.setTimeout(function(){ ws.send(JSON.stringify({register: 'installation'})); }, 200);
 };
 
 // Mobile Client Functions
@@ -139,7 +141,9 @@ var setLightsListener = function(){
   if (typeof(current_light) === 'undefined') current_light = 0; // set first light to show
   ws.onmessage = function (event) { // respond to node.js notifications coming back
     var message = JSON.parse(event.data);
-    console.log('onmessage', event, message, typeof message.data);
+    if (window.location.search === '?verbose') {
+      console.log('onmessage', event, message);
+    }
     var degrees = parseInt(message.data);
     var active_light = Math.floor(degrees / light_increment);
     // for now, only update the lights if user moves into a new light quadrant
