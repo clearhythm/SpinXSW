@@ -141,7 +141,7 @@ var setLightsListener = function(){
    // console.log('onmessage', event);
    var degrees = event.data;
    console.log('event data', event.data);
-   console.log('event id', event.id);
+   console.log('event', event);
    active_light = Math.floor(degrees / light_increment);
    // for now, only update the lights if user moves into a new light quadrant
    if (active_light != current_light) {
