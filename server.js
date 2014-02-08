@@ -35,10 +35,13 @@ wss.on('connection', function(ws) {
 });
 
 wss.broadcast = function(data, senderID) {
+  var broadcast_data = new Object();
+  broadcast_data.data = data;
+  broadcast_data.senderID = senderID;
   for (var i in clients) {
     if (i !== senderID) {
       console.log('Broadcasting message to client id=' + i);
-      clients[i].send(data);
+      clients[i].send(broadcast_data);
     }
   }
 };
