@@ -27,9 +27,10 @@ wss.on('connection', function(ws) {
 
   ws.on('message', function(data, flags) {
     console.log('received from id=' + id +', the following message: ' + data);
-    var message = JSON.stringify(data);
+    var message = JSON.parse(data);
     if (message.register) {
       clients[id].type = message.register;
+      console.log('Registered client id=' + id + ' as type=' + message.register);
     } else {
       wss.broadcast(data, id);
     }
