@@ -1,13 +1,14 @@
 {
-  "name": "node-ws-canary",
+  "name": "spin-poc",
   "version": "0.0.1",
   "repository": {
     "type": "git",
-    "url": "git://github.com/einaros/ws.git"
+    "url": "git://github.com/clearhythm/SpinXSW.git"
   },
   "dependencies": {
     "ws": "0.4.x",
-    "express": "3.x"
+    "express": "3.x",
+    "faye-websocket": "0.7.x"
   },
   "engines": {
     "node": "0.10.x",
