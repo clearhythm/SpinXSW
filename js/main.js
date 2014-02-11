@@ -1,11 +1,11 @@
 require.config({
   paths: {
     jquery: ['//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min', 'lib/jquery-2.1.0.min'],
-    'reconnecting-websocket': 'lib/reconnecting-websocket.e86719bb55',
+    reconnectingwebsocket: 'lib/reconnecting-websocket.e86719bb55',
   },
 
   shim: {
-    'reconnecting-websocket': { exports: 'ReconnectingWebSocket' }
+    reconnectingwebsocket: { exports: 'ReconnectingWebSocket' }
   },
 
   waitSeconds: 60
