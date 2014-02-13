@@ -1,15 +1,17 @@
-define(['jquery', 'app/clientUI', 'app/remote', 'app/simpleInstallationMock', 'app/utils'],
-function ($, clientUI, remote, simpleInstallationMock, utils) {
+define(['jquery', 'app/remote', 'app/utils'],
+function ($, remote, utils) {
   var app = {
     init: function(){
-      // Establish connect to websocket server
+      // Establish connection to websocket server
       remote.init();
 
       // Mobile Clients & Installation get different UIs and data logic
       if (utils.isMobile){
         app.initSwitcher('client');
         app.showClientUI();
-        clientUI.init();
+        require(['app/clientUI'], function (clientUI) {
+          clientUI.init();
+        });
       } else {
         // :: Installation Logic (& mock desktop light rig)
         app.initSwitcher('installation')
@@ -46,7 +48,14 @@ function ($, clientUI, remote, simpleInstallationMock, utils) {
     showInstallationUI: function(){
       $('#client_ui').hide();
       $('#installation_ui').show();
-      simpleInstallationMock.showLights();
+
+      require(['app/threeInstallationMock'], function (threeInstallationMock) {
+        if (threeInstallationMock.init()) {
+          $('#installation_ui h1').hide();
+          threeInstallationMock.animate();
+        }
+      });
+
       remote.registerSelfAs('installation');
     }
   };

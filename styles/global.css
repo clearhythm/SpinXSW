@@ -13,7 +13,7 @@ h1 { margin: 80px 0; font-size: 300% }
 #lights .led { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 24px; -moz-border-radius: 24px; }
 
 /* Switcher */
-.switcher { clear: both; padding-top: 100px; }
+.switcher { position: absolute; bottom: 0.25em; right: 0.25em; }
 .switcher button { font-size: 85%; }
 .switcher button:hover { cursor: pointer; }
 
@@ -21,3 +21,20 @@ h1 { margin: 80px 0; font-size: 300% }
 .clear { clear: both; }
 .hide { display: none; }
 .hidden { visibilty: hidden; }
+
+/* THREE container */
+#threejs-container {
+  position: absolute;
+  text-align: center;
+  padding: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* THREE stats */
+#stats { position: absolute; top:0; left: 0 }
+#stats #fps { background: transparent !important }
+#stats #fps #fpsText { color: #aaa !important }
+#stats #fps #fpsGraph { display: none }
