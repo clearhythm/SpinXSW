@@ -38,3 +38,18 @@ h1 { margin: 80px 0; font-size: 300% }
 #stats #fps { background: transparent !important }
 #stats #fps #fpsText { color: #aaa !important }
 #stats #fps #fpsGraph { display: none }
+
+/* THREE options */
+#threeOptions {
+  position: absolute;
+  top: 0;
+  right: 3px;
+  opacity: 0.67;
+  font-size: 0.67em;
+}
+#threeOptions input[type="text"] {
+  width: 3em;
+}
+#threeOptions input[type="submit"]:disabled {
+  color: #555;
+}

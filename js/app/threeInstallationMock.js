@@ -1,11 +1,16 @@
 // todo: make sure all ".clones()" are necessary, and faster than just recreating geometry (probably)
 
-define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'lodash'],
-function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, _) {
+define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'app/remote', 'app/utils', 'lodash'],
+function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, remote, utils, _) {
+  var allOptions = {
+    configs: ['2', '3', '3,1', '3,2(s)', '4', '4,1', '4,2(s)', '5', '5,1', '6', '6,1', '6,2', '7', '7,1', '8', '8,1', '8,2', '9', '9,1'],
+    modes: ['auto', 'full', 'random', 'listen'],
+    //lprs: {min: 2, max: 960},
+    sss: ['soft', 'star'],
+  };
   var o = {
-    numOfRings: 2,
-    configuration: 0,
-    mode: 'auto', // 'auto', 'full', 'random'
+    config: '3',
+    mode: 'auto', // 'auto', 'full', 'random', 'listen'
     lpr: 128, // Lights per ring
     ss: 'soft' // sprite style: 'soft', 'star'
   };
@@ -21,30 +26,35 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     {hue: 0.76, name: 'purple'},
     {hue: 0.54, name: 'light blue'}
   ];
-  var rings = new THREE.Object3D();
+  var numOfRings;
+  var rings = [];
+  var ringMeshes = new THREE.Object3D();
+  var circles = [];
   var coloredLights = new THREE.Object3D();
   var counter = 0;
   var counterMax;
   var totalCounter = 0;
+  var players = {};
+  var verbose = (window.location.search.search('verbose') !== -1);
+  var stats;
+  var spriteMesh;
+  var cullIntervalID;
+  var cullInterval = 5 * 1000; // remove players after 5 seconds of inactivity
 
   var threeInstallationMock = {
     stats: null,
 
-    init: function () {
-      var options, ringMesh, circleGeometry, circle, i, l, ring, spriteMesh, addSprite, j, m;
+    init: function () { // todo: this method is too big!
+      var options, ringMesh, circleGeometry, circle, arrangement, i, l, ring, j, m;
 
       if (!Detector.webgl) {
         container.innerHTML = '<h2>Having WebGL problems? I feel bad for you.</h2>';
         return;
       }
 
-      if (window.location.search.substring(0, 3) === '?o=') {
-        options = JSON.parse(decodeURIComponent(
-          window.location.search.substring(1).split('&')[0].split('=')[1]
-        ));
-        _.merge(o, options);
-      }
-      console.log('options', o);
+      options = utils.getToObject();
+      _.merge(o, options);
+      console.log('o', o);
 
       // LIGHTS
 
@@ -55,14 +65,22 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
       ringMesh = new THREE.Mesh(geometry.makeRing(), material.whitePlastic);
 
-      circleGeometry = geometry.makeCircle({ segments: o.lpr });
+      circleGeometry = geometry.makeCircle({ segments: parseInt(o.lpr) });
       circle = new THREE.Line(circleGeometry, material.line);
       circle.rotation.x = Math.PI / 2;
       circle.visible = false;
       counterMax = circle.geometry.vertices.length;
       ringMesh.add(circle); // .clone()?
 
-      for (i = 0, l = o.numOfRings; i < l; i++) {
+      numOfRings = parseInt(o.config.split(',')[0]);
+      arrangement = o.config.split(',')[1];
+      if (typeof arrangement === 'undefined') {
+        arrangement = 0;
+      } else {
+        arrangement = parseInt(arrangement);
+      }
+
+      for (i = 0, l = numOfRings; i < l; i++) {
         ring = ringMesh.clone();
 
         ring.position.y = 0; // todo: needed?
@@ -70,166 +88,159 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         ring.overdraw = true; // todo: needed?
         ring.doubleSided = true; // todo: needed?
 
-        rings.add(ring);
+        rings.push(ring);
+        ringMeshes.add(ring);
+        circles.push(ring);
       }
 
-      // Todo: abstract
-      if (o.numOfRings === 2) { // 2 rings
-        rings.children[1].rotation.x = Math.PI * 1 / 2;
-      } else if (o.numOfRings === 3) {
-        if (o.configuration === 0) {
-          rings.children[1].rotation.x = Math.PI * 1 / 3;
-          rings.children[2].rotation.x = Math.PI * 2 / 3;
-        } else if (o.configuration === 1) {
-          rings.children[1].rotation.x = Math.PI * 1 / 2;
-          rings.children[2].rotation.z = Math.PI * 1 / 2;
-        } else {
-          rings.children[1].rotation.x = Math.PI * 1 / 3;
-          rings.children[1].position.x = 0.5;
-          rings.children[2].rotation.x = Math.PI * 2 / 3;
-          rings.children[2].position.x = -0.5;
+      if (arrangement === 0) {
+        threeInstallationMock.arrangeRingsRadially();
+      } else if (numOfRings === 3) {
+        if (arrangement === 1) {
+          ringMeshes.children[1].rotation.x = Math.PI * 1 / 2;
+          ringMeshes.children[2].rotation.z = Math.PI * 1 / 2;
+        } else { // 2
+          ringMeshes.children[1].rotation.x = Math.PI * 1 / 3;
+          ringMeshes.children[1].position.x = 0.5;
+          ringMeshes.children[2].rotation.x = Math.PI * 2 / 3;
+          ringMeshes.children[2].position.x = -0.5;
         }
-      } else if (o.numOfRings === 4) {
-        if (o.configuration === 0) {
-          rings.children[1].rotation.x = Math.PI * 1 / 4;
-          rings.children[2].rotation.x = Math.PI * 2 / 4;
-          rings.children[3].rotation.x = Math.PI * 3 / 4;
-        } else if (o.configuration === 1) {
-          rings.children[1].rotation.x = Math.PI * 1 / 3;
-          rings.children[2].rotation.x = Math.PI * 2 / 3;
-          rings.children[3].rotation.z = Math.PI * 1 / 2;
-        } else {
-          rings.children[1].rotation.x = Math.PI * 1 / 4;
-          rings.children[1].position.x = 0.5;
-          rings.children[2].rotation.x = Math.PI * 2 / 4;
-          rings.children[2].position.x = -0.5;
-          rings.children[3].rotation.x = Math.PI * 3 / 4;
-          rings.children[3].position.x = 1;
+      } else if (numOfRings === 4) {
+        if (arrangement === 1) {
+          ringMeshes.children[1].rotation.x = Math.PI * 1 / 3;
+          ringMeshes.children[2].rotation.x = Math.PI * 2 / 3;
+          ringMeshes.children[3].rotation.z = Math.PI * 1 / 2;
+        } else { // 2
+          ringMeshes.children[1].rotation.x = Math.PI * 1 / 4;
+          ringMeshes.children[1].position.x = 0.5;
+          ringMeshes.children[2].rotation.x = Math.PI * 2 / 4;
+          ringMeshes.children[2].position.x = -0.5;
+          ringMeshes.children[3].rotation.x = Math.PI * 3 / 4;
+          ringMeshes.children[3].position.x = 1;
         }
-      } else if (o.numOfRings === 5) {
-        rings.children[1].rotation.x = Math.PI * 1 / 2;
-        rings.children[2].rotation.z = Math.PI * 1 / 2;
-        rings.children[3].rotation.z = Math.PI * 1 / 2;
-        rings.children[3].rotation.z = Math.PI * 1 / 4;
-        rings.children[4].rotation.z = Math.PI * 1 / 2;
-        rings.children[4].rotation.z = Math.PI * 3 / 4;
-      } else if (o.numOfRings === 6) {
-        if (o.configuration === 0) {
-          rings.children[1].rotation.x = Math.PI * 1 / 6;
-          rings.children[2].rotation.x = Math.PI * 2 / 6;
-          rings.children[3].rotation.x = Math.PI * 3 / 6;
-          rings.children[4].rotation.x = Math.PI * 4 / 6;
-          rings.children[5].rotation.x = Math.PI * 5 / 6;
-        } else if (o.configuration === 1) {
-          rings.children[1].rotation.x = Math.PI * 1 / 3;
-          rings.children[2].rotation.x = Math.PI * 2 / 3;
+      } else if (numOfRings === 5) {
+        // 1
+        ringMeshes.children[1].rotation.x = Math.PI * 1 / 2;
+        ringMeshes.children[2].rotation.z = Math.PI * 1 / 2;
+        ringMeshes.children[3].rotation.z = Math.PI * 1 / 2;
+        ringMeshes.children[3].rotation.z = Math.PI * 1 / 4;
+        ringMeshes.children[4].rotation.z = Math.PI * 1 / 2;
+        ringMeshes.children[4].rotation.z = Math.PI * 3 / 4;
+      } else if (numOfRings === 6) {
+        if (arrangement === 1 || arrangement === 2) {
+          ringMeshes.children[1].rotation.x = Math.PI * 1 / 3;
+          ringMeshes.children[2].rotation.x = Math.PI * 2 / 3;
           var ringGroup = new THREE.Object3D();
-          rings.remove(rings.children[3]);
-          rings.remove(rings.children[4]);
-          rings.remove(rings.children[5]);
-          ringGroup.add(rings.children[3]);
-          ringGroup.add(rings.children[4]);
-          ringGroup.add(rings.children[5]);
-          rings.add(ringGroup);
-          rings.children[4].rotation.x = Math.PI * 1 / 3;
-          rings.children[5].rotation.x = Math.PI * 2 / 3;
-          ringGroup.rotation.z = Math.PI * 1 / 2;
-        } else {
-          rings.children[1].rotation.x = Math.PI * 1 / 3;
-          rings.children[2].rotation.x = Math.PI * 2 / 3;
-          var ringGroup = new THREE.Object3D();
-          rings.remove(rings.children[3]);
-          rings.remove(rings.children[4]);
-          rings.remove(rings.children[5]);
-          ringGroup.add(rings.children[3]);
-          ringGroup.add(rings.children[4]);
-          ringGroup.add(rings.children[5]);
-          ringGroup.scale = new THREE.Vector3(0.9, 0.9, 0.9);
-          rings.add(ringGroup);
-          rings.children[4].rotation.x = Math.PI * 1 / 3;
-          rings.children[5].rotation.x = Math.PI * 2 / 3;
+          ringMeshes.remove(rings[3]);
+          ringMeshes.remove(rings[4]);
+          ringMeshes.remove(rings[5]);
+          ringGroup.add(rings[3]);
+          ringGroup.add(rings[4]);
+          ringGroup.add(rings[5]);
+          ringMeshes.add(ringGroup);
+          ringMeshes.children[3].children[1].rotation.x = Math.PI * 1 / 3;
+          ringMeshes.children[3].children[2].rotation.x = Math.PI * 2 / 3;
           ringGroup.rotation.z = Math.PI * 1 / 2;
 
+          if (arrangement === 2) {
+            ringGroup.scale = new THREE.Vector3(0.9, 0.9, 0.9);
+          }
         }
-      } else if (o.numOfRings === 7) {
-        rings.children[1].rotation.x = Math.PI * 1 / 4;
-        rings.children[2].rotation.x = Math.PI * 2 / 4;
-        rings.children[3].rotation.x = Math.PI * 3 / 4;
+      } else if (numOfRings === 7) {
+        // 1
+        ringMeshes.children[1].rotation.x = Math.PI * 1 / 4;
+        ringMeshes.children[2].rotation.x = Math.PI * 2 / 4;
+        ringMeshes.children[3].rotation.x = Math.PI * 3 / 4;
         var ringGroup = new THREE.Object3D();
-        rings.remove(rings.children[4]);
-        rings.remove(rings.children[5]);
-        rings.remove(rings.children[6]);
-        ringGroup.add(rings.children[4]);
-        ringGroup.add(rings.children[5]);
-        ringGroup.add(rings.children[6]);
-        rings.add(ringGroup);
-        rings.children[5].rotation.x = Math.PI * 1 / 4;
-        rings.children[6].rotation.x = Math.PI * 3 / 4;
+        ringMeshes.remove(rings[4]);
+        ringMeshes.remove(rings[5]);
+        ringMeshes.remove(rings[6]);
+        ringGroup.add(rings[4]);
+        ringGroup.add(rings[5]);
+        ringGroup.add(rings[6]);
+        ringMeshes.add(ringGroup);
+        ringMeshes.children[4].children[1].rotation.x = Math.PI * 1 / 4;
+        ringMeshes.children[4].children[2].rotation.x = Math.PI * 3 / 4;
         ringGroup.rotation.z = Math.PI * 1 / 2;
-      } else if (o.numOfRings === 8) {
-        if (o.configuration === 0) {
-          rings.children[1].rotation.x = Math.PI * 1 / 8;
-          rings.children[2].rotation.x = Math.PI * 2 / 8;
-          rings.children[3].rotation.x = Math.PI * 3 / 8;
-          rings.children[4].rotation.x = Math.PI * 4 / 8;
-          rings.children[5].rotation.x = Math.PI * 5 / 8;
-          rings.children[6].rotation.x = Math.PI * 6 / 8;
-          rings.children[7].rotation.x = Math.PI * 7 / 8;
-        } else if (o.configuration === 1) {
-          rings.children[1].rotation.x = Math.PI * 1 / 4;
-          rings.children[2].rotation.x = Math.PI * 2 / 4;
-          rings.children[3].rotation.x = Math.PI * 3 / 4;
+      } else if (numOfRings === 8) {
+        if (arrangement === 1) {
+          ringMeshes.children[1].rotation.x = Math.PI * 1 / 4;
+          ringMeshes.children[2].rotation.x = Math.PI * 2 / 4;
+          ringMeshes.children[3].rotation.x = Math.PI * 3 / 4;
           var ringGroup = new THREE.Object3D();
-          rings.remove(rings.children[4]);
-          rings.remove(rings.children[5]);
-          rings.remove(rings.children[6]);
-          rings.remove(rings.children[7]);
-          ringGroup.add(rings.children[4]);
-          ringGroup.add(rings.children[5]);
-          ringGroup.add(rings.children[6]);
-          ringGroup.add(rings.children[7]);
+          ringMeshes.remove(rings[4]);
+          ringMeshes.remove(rings[5]);
+          ringMeshes.remove(rings[6]);
+          ringMeshes.remove(rings[7]);
+          ringGroup.add(rings[4]);
+          ringGroup.add(rings[5]);
+          ringGroup.add(rings[6]);
+          ringGroup.add(rings[7]);
           ringGroup.scale = new THREE.Vector3(0.9, 0.9, 0.9);
-          rings.add(ringGroup);
-          rings.children[5].rotation.x = Math.PI * 1 / 4;
-          rings.children[6].rotation.x = Math.PI * 2 / 4;
-          rings.children[7].rotation.x = Math.PI * 3 / 4;
+          ringMeshes.add(ringGroup);
+          ringMeshes.children[4].children[1].rotation.x = Math.PI * 1 / 4;
+          ringMeshes.children[4].children[2].rotation.x = Math.PI * 2 / 4;
+          ringMeshes.children[4].children[3].rotation.x = Math.PI * 3 / 4;
           ringGroup.rotation.z = Math.PI * 1 / 2;
-        } else {
-          rings.children[1].rotation.x = Math.PI * 1 / 3;
-          rings.children[2].rotation.x = Math.PI * 2 / 3;
+        } else { // 2
+          ringMeshes.children[1].rotation.x = Math.PI * 1 / 3;
+          ringMeshes.children[2].rotation.x = Math.PI * 2 / 3;
           var ringGroup = new THREE.Object3D();
-          rings.remove(rings.children[3]);
-          rings.remove(rings.children[4]);
-          rings.remove(rings.children[5]);
-          ringGroup.add(rings.children[3]);
-          ringGroup.add(rings.children[4]);
-          ringGroup.add(rings.children[5]);
-          rings.add(ringGroup);
-          rings.children[4].rotation.x = Math.PI * 1 / 3;
-          rings.children[5].rotation.x = Math.PI * 2 / 3;
-          ringGroup.rotation.z = Math.PI * 1 / 2;
+          ringMeshes.remove(rings[3]);
+          ringMeshes.remove(rings[4]);
+          ringMeshes.remove(rings[5]);
+          ringGroup.add(rings[3]);
+          ringGroup.add(rings[4]);
+          ringGroup.add(rings[5]);
+
           var ringGroup2 = new THREE.Object3D();
-          rings.remove(rings.children[6]);
-          rings.remove(rings.children[7]);
-          ringGroup2.add(rings.children[6]);
-          ringGroup2.add(rings.children[7]);
-          rings.add(ringGroup2);
-          rings.children[6].rotation.x = Math.PI * 1 / 3;
-          rings.children[7].rotation.x = Math.PI * 2 / 3;
+          ringMeshes.remove(rings[6]);
+          ringMeshes.remove(rings[7]);
+          ringGroup2.add(rings[6]);
+          ringGroup2.add(rings[7]);
+
+          ringMeshes.add(ringGroup);
+          ringMeshes.children[3].children[1].rotation.x = Math.PI * 1 / 3;
+          ringMeshes.children[3].children[2].rotation.x = Math.PI * 2 / 3;
+          ringGroup.rotation.z = Math.PI * 1 / 2;
+
+          ringMeshes.add(ringGroup2);
+          ringMeshes.children[4].children[0].rotation.x = Math.PI * 1 / 3;
+          ringMeshes.children[4].children[1].rotation.x = Math.PI * 2 / 3;
           ringGroup2.rotation.y = Math.PI * 1 / 2;
         }
-      } else if (o.numOfRings === 9) {
-        rings.children[1].rotation.x = Math.PI * 1 / 9;
-        rings.children[2].rotation.x = Math.PI * 2 / 9;
-        rings.children[3].rotation.x = Math.PI * 3 / 9;
-        rings.children[4].rotation.x = Math.PI * 4 / 9;
-        rings.children[5].rotation.x = Math.PI * 5 / 9;
-        rings.children[6].rotation.x = Math.PI * 6 / 9;
-        rings.children[7].rotation.x = Math.PI * 7 / 9;
-        rings.children[8].rotation.x = Math.PI * 8 / 9;
+      } else if (numOfRings === 9) {
+        // 1
+        ringMeshes.children[1].rotation.x = Math.PI * 1 / 4;
+        ringMeshes.children[2].rotation.x = Math.PI * 2 / 4;
+        ringMeshes.children[3].rotation.x = Math.PI * 3 / 4;
+
+        var ringGroup = new THREE.Object3D();
+        ringMeshes.remove(rings[4]);
+        ringMeshes.remove(rings[5]);
+        ringMeshes.remove(rings[6]);
+        ringGroup.add(rings[4]);
+        ringGroup.add(rings[5]);
+        ringGroup.add(rings[6]);
+
+        var ringGroup2 = new THREE.Object3D();
+        ringMeshes.remove(rings[7]);
+        ringMeshes.remove(rings[8]);
+        ringGroup2.add(rings[7]);
+        ringGroup2.add(rings[8]);
+
+        ringMeshes.add(ringGroup);
+        ringMeshes.children[4].children[1].rotation.x = Math.PI * 1 / 4;
+        ringMeshes.children[4].children[2].rotation.x = Math.PI * 3 / 4;
+        ringGroup.rotation.z = Math.PI * 1 / 2;
+
+        ringMeshes.add(ringGroup2);
+        ringMeshes.children[5].children[0].rotation.x = Math.PI * 1 / 4;
+        ringMeshes.children[5].children[1].rotation.x = Math.PI * 3 / 4;
+        ringGroup2.rotation.y = Math.PI * 1 / 2;
       }
 
-      scene.add(rings);
+      scene.add(ringMeshes);
 
       // PARTICLES
 
@@ -241,63 +252,36 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         spriteMesh.scale.set(4, 4, 4); // todo: not hard-coded
       }
 
-      addSprite = function(h, s, l, x, y, z, scale, withLight){
-        var light, sprite;
-
-        if (withLight === true) {
-          light = new THREE.PointLight(0xffffff, 2.5, 5); // todo: move to app/three/light.js?
-          light.color.setHSL( h, s, l );
-        }
-
-        sprite = spriteMesh.clone(); // todo: needed? pretty sure it is.
-        sprite.position.set( x, y, z );
-        if (scale !== 1) {
-          var scaledSize = sprite.scale.x * scale;
-          sprite.scale.set( scaledSize, scaledSize, scaledSize );
-        }
-        sprite.material = sprite.material.clone(); // todo: ditto?
-        sprite.material.color.setHSL(h, s, l);
-        // sprite.opacity = 0.80; // translucent particles
-        sprite.material.blending = THREE.AdditiveBlending; // "glowing" particles
-
-        if (withLight === true) {
-          light.position = sprite.position;
-          sprite.add(light);
-        }
-
-        coloredLights.add(sprite);
-      }
-
       if (o.mode === 'auto') {
-        for (i = 0, l = o.numOfRings; i < l; i++) {
-          addSprite(colorPallete[i].hue, 1, 0.5, 0, 0, 0, 0.0125, true);
+        for (i = 0, l = numOfRings; i < l; i++) {
+          threeInstallationMock.addSprite(colorPallete[i].hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
         }
       } else if (o.mode === 'full') {
         scene.updateMatrixWorld();
-        for (i = 0, l = o.numOfRings; i < l; i++) {
-          var circle = rings.children[i].children[0];
+        for (i = 0, l = numOfRings; i < l; i++) {
+          var circle = circles[i].children[0];
           for (j = 0, m = counterMax; j < m; j++) {
             //var coords = circle.geometry.vertices[j].clone();
             //coords.applyMatrix4(circle.matrixWorld);
             var coords = circle.localToWorld(circle.geometry.vertices[j].clone());
-            addSprite(colorPallete[i].hue, 1, 0.5, coords.x, coords.y, coords.z, 1, false);
+            threeInstallationMock.addSprite(colorPallete[i].hue, 1, 0.5, coords.x, coords.y, coords.z, 1, false);
           }
         }
       } else if (o.mode === 'random') {
         scene.updateMatrixWorld();
-        for (i = 0, l = o.numOfRings; i < l; i++) {
+        for (i = 0, l = numOfRings; i < l; i++) {
           var startPosition = Math.round(Math.random() * counterMax);
           var direction = Math.round(Math.random()) * 2 - 1;
           var length = Math.round(Math.random() * counterMax / 8);
-          var circle = rings.children[i].children[0];
+          var circle = circles[i].children[0];
           console.log('i, startPosition, direction, length', i, startPosition, direction, length);
           for (j = 0, m = length; j < m; j++) {
             var vIndex = (startPosition + (direction * j)) % counterMax;
             if (vIndex < 0) vIndex = counterMax + vIndex;
-            var scale = 1 - (j / length);
-            console.log('i, j, vIndex, counterMax, scale', i, j, vIndex, counterMax, scale);
+            var lightness = (1 - (j / length)) / 2;
+            console.log('i, j, vIndex, counterMax, lightness', i, j, vIndex, counterMax, lightness);
             var coords = circle.localToWorld(circle.geometry.vertices[vIndex].clone());
-            addSprite(colorPallete[i].hue, 1, 0.5, coords.x, coords.y, coords.z, scale, false);
+            threeInstallationMock.addSprite(colorPallete[i].hue, 1, lightness, coords.x, coords.y, coords.z, 1, true, 5 * lightness, 250);
           }
         }
       }
@@ -308,10 +292,147 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
       // STATS
 
-      threeInstallationMock.stats = new Stats();
-      container.appendChild(threeInstallationMock.stats.domElement);
+      stats = new Stats();
+      container.appendChild(stats.domElement);
 
-      return true; // todo: better to just move the initial ".animate()" call here? Or...?
+      threeInstallationMock.animate();
+      if (o.mode === 'listen') {
+        threeInstallationMock.listen();
+      }
+
+      threeInstallationMock.insertControls();
+
+      return true;
+    },
+
+    arrangeRingsRadially: function(){
+      var i, l;
+      for (i = 1, l = numOfRings; i < l; i++) {
+        ringMeshes.children[i].rotation.x = Math.PI * i / l;
+      }
+    },
+
+    addSprite: function (h, s, l, x, y, z, scale, withLight, intensity, distance) {
+      var light, sprite;
+
+      if (withLight === true) {
+        light = new THREE.PointLight(0xffffff, intensity, distance); // todo: move to app/three/light.js?
+        light.color.setHSL( h, s, l );
+      }
+
+      sprite = spriteMesh.clone(); // todo: needed? pretty sure it is.
+      sprite.position.set( x, y, z );
+      if (scale !== 1) {
+        var scaledSize = sprite.scale.x * scale;
+        sprite.scale.set( scaledSize, scaledSize, scaledSize );
+      }
+      sprite.material = sprite.material.clone(); // todo: ditto?
+      sprite.material.color.setHSL(h, s, l);
+      // sprite.opacity = 0.80; // translucent particles
+      sprite.material.blending = THREE.AdditiveBlending; // "glowing" particles
+
+      if (withLight === true) {
+        light.position = sprite.position;
+        sprite.add(light);
+      }
+
+      coloredLights.add(sprite);
+    },
+
+    insertControls: function(){
+      $(container).parent().append('<div id="threeOptions"></div>');
+      $('#threeOptions').html('<form>\
+        <label for="config">Ring configuration:</label><select name="config"></select>\
+        <label for="mode">Mode:</label><select name="mode"></select>\
+        <label for="ss">Sprite style:</label><select name="ss"></select>\
+        <label for="lpr">Lights per ring:</label><input type="text" name="lpr" value="' + o.lpr + '">\
+        <input type="submit" value="Apply" disabled="disabled">\
+      </form>');
+
+      threeInstallationMock.addOptionsToSelect('config', 'configs');
+      threeInstallationMock.addOptionsToSelect('mode', 'modes');
+      threeInstallationMock.addOptionsToSelect('ss', 'sss');
+
+      $('#threeOptions form').on('change input', function(){
+        $('#threeOptions form input[type=submit]').removeAttr('disabled');
+      });
+    },
+
+    addOptionsToSelect: function(singular, plural){
+      for (i = 0, l = allOptions[plural].length; i < l; i++) {
+        $('#threeOptions select[name=' + singular + ']').append('<option value="' + allOptions[plural][i] + '">' + allOptions[plural][i] + '</option>');
+        if (o[singular] === allOptions[plural][i]) {
+          $('#threeOptions select[name=' + singular + '] option:last-child').attr('selected', true);
+        }
+      }
+    },
+
+    listen: function(){
+      remote.onmessage(function (event) { // respond to node.js notifications coming back
+        var message = JSON.parse(event.data);
+        if (verbose) {
+          console.log('onmessage', event, message);
+        }
+
+        var senderID = message.senderID;
+        var pName = 'p' + senderID;
+
+        if (!players[pName]) {
+          if (typeof cullIntervalID === 'undefined') {
+            cullIntervalID = window.setInterval(threeInstallationMock.cullIdlePlayers, cullInterval);
+          }
+
+          var i = coloredLights.children.length;
+
+          // todo: why don't these sprites have lights?
+          threeInstallationMock.addSprite(colorPallete[i].hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
+
+          var whichRing = Math.round((numOfRings - 1) * Math.random());
+
+          console.log('pName, i, whichRing', pName, i, whichRing);
+
+          players[pName] = {
+            sprite: coloredLights.children[i],
+            position: 0,
+            circle: ringMeshes.children[whichRing].children[0],
+            active: true
+          };
+        }
+
+        var player = players[pName];
+
+        var degrees = parseInt(message.data);
+        var position = Math.floor(degrees / 360 * parseInt(o.lpr));
+
+        //console.log('message.data, degrees, position', message.data, degrees, position);
+
+        // for now, only update the lights if user moves into a new light quadrant
+        if (position !== player.position) {
+          player.position = position;
+          var coords = player.circle.localToWorld(player.circle.geometry.vertices[position].clone());
+          player.sprite.position.x = coords.x;
+          player.sprite.position.y = coords.y;
+          player.sprite.position.z = coords.z;
+        }
+
+        // mark player as active (used by `cullIdlePlayers`)
+        player.active = true;
+      });
+    },
+
+    cullIdlePlayers: function () {
+      var playerID, player;
+
+      for (playerID in players) {
+        player = players[playerID];
+        if (player.active === false) {
+          console.log('Culling idle player "' + playerID + '"');
+          coloredLights.remove(players[playerID].sprite);
+          delete players[playerID];
+        } else {
+          player.active = false;
+        }
+      }
     },
 
     animate: function () {
@@ -321,8 +442,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       controls.update();
 
       if (o.mode === 'auto') {
-        for (i = 0, l = coloredLights.children.length; i < l; i++) {
-          circle = rings.children[i].children[0];
+        for (i = 0, l = numOfRings; i < l; i++) {
+          circle = circles[i].children[0];
           coords = circle.localToWorld(circle.geometry.vertices[Math.floor(counter / 10)].clone());
           if (totalCounter < 11 && counter === 10) {
             console.log('i, coords', i, coords);
@@ -341,7 +462,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
       renderer.render(scene, camera);
 
-      threeInstallationMock.stats.update();
+      stats.update();
     }
   };
 

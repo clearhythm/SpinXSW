@@ -1,7 +1,7 @@
 define(['three', 'app/three/scene'], function (THREE, scene) {
   var light = {
     addDirectional: function(){
-      var aLight = new THREE.DirectionalLight(0x333333);
+      var aLight = new THREE.DirectionalLight(0xffffff);
       aLight.position.set(0, 0, 300);
       scene.add(aLight);
 
