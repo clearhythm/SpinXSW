@@ -5,8 +5,9 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
   var o = {
     numOfRings: 2,
     configuration: 0,
-    mode: 'auto',
-    lpr: 128
+    mode: 'auto', // 'auto', 'full', 'random'
+    lpr: 128, // Lights per ring
+    ss: 'soft' // sprite style: 'soft', 'star'
   };
   var ringRadius = 59;
   var colorPallete = [
@@ -45,6 +46,11 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       }
       console.log('options', o);
 
+      // LIGHTS
+
+      light.addDirectional();
+      light.addAmbient();
+
       // RINGS
 
       ringMesh = new THREE.Mesh(geometry.makeRing(), material.whitePlastic);
@@ -67,6 +73,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         rings.add(ring);
       }
 
+      // Todo: abstract
       if (o.numOfRings === 2) { // 2 rings
         rings.children[1].rotation.x = Math.PI * 1 / 2;
       } else if (o.numOfRings === 3) {
@@ -226,26 +233,35 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
       // PARTICLES
 
-      spriteMesh = new THREE.Sprite(material.sparkSprite);
-      spriteMesh.scale.set(4, 4, 4); // todo: not hard-coded
+      if (o.ss === 'star') {
+        spriteMesh = new THREE.Sprite(material.starSprite);
+        spriteMesh.scale.set(6, 6, 6); // todo: not hard-coded
+      } else {
+        spriteMesh = new THREE.Sprite(material.softSprite);
+        spriteMesh.scale.set(4, 4, 4); // todo: not hard-coded
+      }
 
-      addSprite = function(h, s, l, x, y, z, withLight){
+      addSprite = function(h, s, l, x, y, z, scale, withLight){
         var light, sprite;
 
         if (withLight === true) {
-          light = new THREE.PointLight(0xffffff, 1.5, 4500); // todo: move to app/three/light.js?
+          light = new THREE.PointLight(0xffffff, 2.5, 5); // todo: move to app/three/light.js?
           light.color.setHSL( h, s, l );
-          light.position.set( x, y, z );
         }
 
         sprite = spriteMesh.clone(); // todo: needed? pretty sure it is.
+        sprite.position.set( x, y, z );
+        if (scale !== 1) {
+          var scaledSize = sprite.scale.x * scale;
+          sprite.scale.set( scaledSize, scaledSize, scaledSize );
+        }
         sprite.material = sprite.material.clone(); // todo: ditto?
         sprite.material.color.setHSL(h, s, l);
         // sprite.opacity = 0.80; // translucent particles
         sprite.material.blending = THREE.AdditiveBlending; // "glowing" particles
 
         if (withLight === true) {
-          sprite.position = light.position;
+          light.position = sprite.position;
           sprite.add(light);
         }
 
@@ -254,12 +270,34 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
       if (o.mode === 'auto') {
         for (i = 0, l = o.numOfRings; i < l; i++) {
-          addSprite(colorPallete[i].hue, 1, 0.5, 0, 0, 0, true);
+          addSprite(colorPallete[i].hue, 1, 0.5, 0, 0, 0, 0.0125, true);
         }
       } else if (o.mode === 'full') {
+        scene.updateMatrixWorld();
         for (i = 0, l = o.numOfRings; i < l; i++) {
+          var circle = rings.children[i].children[0];
           for (j = 0, m = counterMax; j < m; j++) {
-            addSprite(colorPallete[i].hue, 1, 0.5, 0, 0, 0, false);
+            //var coords = circle.geometry.vertices[j].clone();
+            //coords.applyMatrix4(circle.matrixWorld);
+            var coords = circle.localToWorld(circle.geometry.vertices[j].clone());
+            addSprite(colorPallete[i].hue, 1, 0.5, coords.x, coords.y, coords.z, 1, false);
+          }
+        }
+      } else if (o.mode === 'random') {
+        scene.updateMatrixWorld();
+        for (i = 0, l = o.numOfRings; i < l; i++) {
+          var startPosition = Math.round(Math.random() * counterMax);
+          var direction = Math.round(Math.random()) * 2 - 1;
+          var length = Math.round(Math.random() * counterMax / 8);
+          var circle = rings.children[i].children[0];
+          console.log('i, startPosition, direction, length', i, startPosition, direction, length);
+          for (j = 0, m = length; j < m; j++) {
+            var vIndex = (startPosition + (direction * j)) % counterMax;
+            if (vIndex < 0) vIndex = counterMax + vIndex;
+            var scale = 1 - (j / length);
+            console.log('i, j, vIndex, counterMax, scale', i, j, vIndex, counterMax, scale);
+            var coords = circle.localToWorld(circle.geometry.vertices[vIndex].clone());
+            addSprite(colorPallete[i].hue, 1, 0.5, coords.x, coords.y, coords.z, scale, false);
           }
         }
       }
@@ -299,19 +337,6 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         if (counter % (counterMax * 10) === 0) {
           counter = 0;
         }
-      } else if (o.mode === 'full' && totalCounter < 2) {
-        for (i = 0, l = o.numOfRings; i < l; i++) {
-          circle = rings.children[i].children[0];
-          for (j = 0, m = counterMax; j < m; j++) {
-            coords = circle.localToWorld(circle.geometry.vertices[j].clone());
-            if (j % 10 === 0) {
-              console.log('i, j, coords', i, j, coords);
-            }
-            coloredLights.children[i * counterMax + j].position = new THREE.Vector3(coords.x, coords.y, coords.z);
-          }
-        }
-
-        totalCounter++;
       }
 
       renderer.render(scene, camera);
