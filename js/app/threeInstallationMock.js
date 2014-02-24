@@ -3,7 +3,7 @@
 define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'app/remote', 'app/utils', 'lodash'],
 function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, remote, utils, _) {
   var allOptions = {
-    configs: ['2', '3', '3,1', '3,2(s)', '4', '4,1', '4,2(s)', '5', '5,1', '6', '6,1', '6,2', '7', '7,1', '8', '8,1', '8,2', '9', '9,1'],
+    configs: ['2', '3', '3,1', '3,2(s)', '4', '4,1', '4,2(s)', '5', '5,1', '6', '6,1', '6,2', '7', '7,1', '8', '8,1', '8,2', '9', '9,1', '16'],
     modes: ['auto', 'full', 'random', 'listen'],
     //lprs: {min: 2, max: 960},
     sss: ['soft', 'star'],
@@ -12,7 +12,9 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     config: '3',
     mode: 'auto', // 'auto', 'full', 'random', 'listen'
     lpr: 128, // Lights per ring
-    ss: 'soft' // sprite style: 'soft', 'star'
+    ss: 'soft', // sprite style: 'soft', 'star',
+    cover: false, // light cover
+    lightOnly: false // no sprite
   };
   var ringRadius = 59;
   var colorPallete = [
@@ -71,6 +73,12 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       circle.visible = false;
       counterMax = circle.geometry.vertices.length;
       ringMesh.add(circle); // .clone()?
+
+      if (o.cover) { // todo
+        var torusMesh = new THREE.Mesh(geometry.makeTorus(), material.frostedPlastic);
+        torusMesh.rotation.x = Math.PI / 2;
+        ringMesh.add(torusMesh); // .clone()?
+      }
 
       numOfRings = parseInt(o.config.split(',')[0]);
       arrangement = o.config.split(',')[1];
@@ -254,7 +262,11 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
       if (o.mode === 'auto') {
         for (i = 0, l = numOfRings; i < l; i++) {
-          threeInstallationMock.addSprite(colorPallete[i].hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
+          if (o.cover) {
+            threeInstallationMock.addSprite(colorPallete[i % colorPallete.length].hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 5);
+          } else {
+            threeInstallationMock.addSprite(colorPallete[i % colorPallete.length].hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
+          }
         }
       } else if (o.mode === 'full') {
         scene.updateMatrixWorld();
@@ -264,7 +276,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
             //var coords = circle.geometry.vertices[j].clone();
             //coords.applyMatrix4(circle.matrixWorld);
             var coords = circle.localToWorld(circle.geometry.vertices[j].clone());
-            threeInstallationMock.addSprite(colorPallete[i].hue, 1, 0.5, coords.x, coords.y, coords.z, 1, false);
+            var hue = j / m;
+            threeInstallationMock.addSprite(hue, 1, 0.5, coords.x, coords.y, coords.z, 1, false);
           }
         }
       } else if (o.mode === 'random') {
@@ -281,7 +294,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
             var lightness = (1 - (j / length)) / 2;
             console.log('i, j, vIndex, counterMax, lightness', i, j, vIndex, counterMax, lightness);
             var coords = circle.localToWorld(circle.geometry.vertices[vIndex].clone());
-            threeInstallationMock.addSprite(colorPallete[i].hue, 1, lightness, coords.x, coords.y, coords.z, 1, true, 5 * lightness, 250);
+            threeInstallationMock.addSprite(colorPallete[i % colorPallete.length].hue, 1, lightness, coords.x, coords.y, coords.z, 1, true, 5 * lightness, 250);
           }
         }
       }
@@ -320,6 +333,12 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         light.color.setHSL( h, s, l );
       }
 
+      if (o.lightOnly === true) {
+        light.position.set( x, y, z );
+        coloredLights.add(light);
+        return;
+      }
+
       sprite = spriteMesh.clone(); // todo: needed? pretty sure it is.
       sprite.position.set( x, y, z );
       if (scale !== 1) {
@@ -328,7 +347,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       }
       sprite.material = sprite.material.clone(); // todo: ditto?
       sprite.material.color.setHSL(h, s, l);
-      // sprite.opacity = 0.80; // translucent particles
+      //sprite.opacity = 0.5; // translucent particles
+      //sprite.transparent = true; // translucent particles
       sprite.material.blending = THREE.AdditiveBlending; // "glowing" particles
 
       if (withLight === true) {
@@ -385,7 +405,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           var i = coloredLights.children.length;
 
           // todo: why don't these sprites have lights?
-          threeInstallationMock.addSprite(colorPallete[i].hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
+          threeInstallationMock.addSprite(colorPallete[i % colorPallete.length].hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
 
           var whichRing = Math.round((numOfRings - 1) * Math.random());
 

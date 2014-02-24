@@ -6,6 +6,14 @@ define(['three', 'app/three/texture'], function (THREE, texture) {
       specular: 0xb3b3b3,
       shininess: 32
     }),
+    frostedPlastic: new THREE.MeshPhongMaterial({
+      ambient: 0x000000,
+      color: 0x8c8c8c,
+      specular: 0xb3b3b3,
+      //shininess: 32,
+      opacity: 0.5,
+      transparent: true
+    }),
     starSprite: new THREE.SpriteMaterial({
       map: texture.lensflare,
       useScreenCoordinates: false, // todo: necessary?
