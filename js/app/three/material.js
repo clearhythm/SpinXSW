@@ -1,7 +1,7 @@
 define(['three', 'app/three/texture'], function (THREE, texture) {
   return {
     whitePlastic: new THREE.MeshPhongMaterial({
-      ambient: 0x000000,
+      ambient: 0x111111,
       color: 0x8c8c8c,
       specular: 0xb3b3b3,
       shininess: 32

@@ -7,6 +7,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     modes: ['auto', 'full', 'random', 'listen'],
     //lprs: {min: 2, max: 960},
     sss: ['soft', 'star'],
+    useDirectionalLights: [true, false],
+    useAmbientLights: [true, false]
   };
   var o = {
     config: '3',
@@ -14,7 +16,9 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     lpr: 128, // Lights per ring
     ss: 'soft', // sprite style: 'soft', 'star',
     cover: false, // light cover
-    lightOnly: false // no sprite
+    lightOnly: false, // no sprite
+    useDirectionalLight: true,
+    useAmbientLight: true
   };
   var ringRadius = 59;
   var colorPallete = [
@@ -47,7 +51,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     stats: null,
 
     init: function () { // todo: this method is too big!
-      var options, ringMesh, circleGeometry, circle, arrangement, i, l, ring, j, m;
+      var options, option, ringMesh, circleGeometry, circle, arrangement, i, l, ring, j, m;
 
       if (!Detector.webgl) {
         container.innerHTML = '<h2>Having WebGL problems? I feel bad for you.</h2>';
@@ -55,13 +59,24 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       }
 
       options = utils.getToObject();
+      for (option in options) {
+        if (options[option] === 'true') {
+          options[option] = true;
+        } else if (options[option] === 'false') {
+          options[option] = false;
+        }
+      }
       _.merge(o, options);
       console.log('o', o);
 
       // LIGHTS
 
-      light.addDirectional();
-      light.addAmbient();
+      if (o.useDirectionalLight) {
+        light.addDirectional();
+      }
+      if (o.useAmbientLight) {
+        light.addAmbient();
+      }
 
       // RINGS
 
@@ -578,16 +593,20 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     insertControls: function(){
       $(container).parent().append('<div id="threeOptions"></div>');
       $('#threeOptions').html('<form>\
-        <label for="config">Ring configuration:</label><select name="config"></select>\
-        <label for="mode">Mode:</label><select name="mode"></select>\
-        <label for="ss">Sprite style:</label><select name="ss"></select>\
-        <label for="lpr">Lights per ring:</label><input type="text" name="lpr" value="' + o.lpr + '">\
+        <label for="config">Ring configuration:</label><select name="config"></select><br>\
+        <label for="mode">Mode:</label><select name="mode"></select><br>\
+        <label for="ss">Sprite style:</label><select name="ss"></select><br>\
+        <label for="ss">Directional light:</label><select name="useDirectionalLight"></select><br>\
+        <label for="ss">Ambient light:</label><select name="useAmbientLight"></select><br>\
+        <label for="lpr">Lights per ring:</label><input type="text" name="lpr" value="' + o.lpr + '"><br>\
         <input type="submit" value="Apply" disabled="disabled">\
       </form>');
 
       threeInstallationMock.addOptionsToSelect('config', 'configs');
       threeInstallationMock.addOptionsToSelect('mode', 'modes');
       threeInstallationMock.addOptionsToSelect('ss', 'sss');
+      threeInstallationMock.addOptionsToSelect('useDirectionalLight', 'useDirectionalLights');
+      threeInstallationMock.addOptionsToSelect('useAmbientLight', 'useAmbientLights');
 
       $('#threeOptions form').on('change input', function(){
         $('#threeOptions form input[type=submit]').removeAttr('disabled');

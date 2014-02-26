@@ -46,6 +46,7 @@ h1 { margin: 80px 0; font-size: 300% }
   right: 3px;
   opacity: 0.67;
   font-size: 0.67em;
+  text-align: right;
 }
 #threeOptions input[type="text"] {
   width: 3em;
