@@ -3,7 +3,7 @@
 define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'app/remote', 'app/utils', 'lodash'],
 function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, remote, utils, _) {
   var allOptions = {
-    configs: ['2', '3', '3,1', '3,2(s)', '4', '4,1', '4,2(s)', '5', '5,1', '6', '6,1', '6,2', '7', '7,1', '7,2', '8', '8,1', '8,2', '8,3', '8,4', '8,5', '9', '9,1', '16'],
+    configs: ['2', '3', '3,1', '3,2(s)', '4', '4,1', '4,2(s)', '5', '5,1', '6', '6,1', '6,2', '7', '7,1', '7,2', '8', '8,1', '8,2', '8,3', '8,4', '8,5', '9', '9,1', '10,1', '12,1', '16'],
     modes: ['auto', 'full', 'random', 'listen'],
     //lprs: {min: 2, max: 960},
     sss: ['soft', 'star'],
@@ -371,6 +371,97 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         ringMeshes.children[5].children[0].rotation.x = Math.PI * 1 / 4;
         ringMeshes.children[5].children[1].rotation.x = Math.PI * 3 / 4;
         ringGroup2.rotation.y = Math.PI * 1 / 2;
+      } else if (numOfRings === 10) {
+        // 1
+        ringMeshes.children[1].rotation.x = Math.PI * 1 / 4;
+        ringMeshes.children[2].rotation.x = Math.PI * 2 / 4;
+        ringMeshes.children[3].rotation.x = Math.PI * 3 / 4;
+
+        var ringGroup = new THREE.Object3D();
+        ringMeshes.remove(rings[4]);
+        ringMeshes.remove(rings[5]);
+        ringMeshes.remove(rings[6]);
+        ringGroup.add(rings[4]);
+        ringGroup.add(rings[5]);
+        ringGroup.add(rings[6]);
+
+        var ringGroup2 = new THREE.Object3D();
+        ringMeshes.remove(rings[7]);
+        ringMeshes.remove(rings[8]);
+        ringMeshes.remove(rings[9]);
+        ringGroup2.add(rings[7]);
+        ringGroup2.add(rings[8]);
+        ringGroup2.add(rings[9]);
+
+        ringMeshes.add(ringGroup);
+        ringMeshes.children[4].children[0].rotation.x = Math.PI * 1 / 4;
+        ringMeshes.children[4].children[1].rotation.x = Math.PI * 2 / 4;
+        ringMeshes.children[4].children[2].rotation.x = Math.PI * 3 / 4;
+        ringGroup.rotation.y = Math.PI * 1 / 3;
+
+        ringMeshes.add(ringGroup2);
+        ringMeshes.children[5].children[0].rotation.x = Math.PI * 1 / 4;
+        ringMeshes.children[5].children[1].rotation.x = Math.PI * 2 / 4;
+        ringMeshes.children[5].children[2].rotation.x = Math.PI * 3 / 4;
+        ringGroup2.rotation.y = Math.PI * 2 / 3;
+      } else if (numOfRings === 12) {
+        // 1
+
+        ringMeshes.children[1].rotateZ(Math.PI * 1 / 3);
+        ringMeshes.children[2].rotateZ(Math.PI * 2 / 3);
+
+        var ringGroup = new THREE.Object3D();
+        ringMeshes.remove(rings[3]);
+        ringMeshes.remove(rings[4]);
+        ringMeshes.remove(rings[5]);
+        ringGroup.add(rings[3]);
+        ringGroup.add(rings[4]);
+        ringGroup.add(rings[5]);
+
+        var ringGroup2 = new THREE.Object3D();
+        ringMeshes.remove(rings[6]);
+        ringMeshes.remove(rings[7]);
+        ringMeshes.remove(rings[8]);
+        ringGroup2.add(rings[6]);
+        ringGroup2.add(rings[7]);
+        ringGroup2.add(rings[8]);
+
+        var ringGroup3 = new THREE.Object3D();
+        ringMeshes.remove(rings[9]);
+        ringMeshes.remove(rings[10]);
+        ringMeshes.remove(rings[11]);
+        ringGroup3.add(rings[9]);
+        ringGroup3.add(rings[10]);
+        ringGroup3.add(rings[11]);
+
+        ringMeshes.add(ringGroup);
+        ringMeshes.add(ringGroup2);
+        ringMeshes.add(ringGroup3);
+
+        ringMeshes.children[3].rotation.x = Math.acos(-1 / 3);
+        ringMeshes.children[3].children[1].rotateZ(Math.PI * 1 / 3);
+        ringMeshes.children[3].children[2].rotateZ(Math.PI * 2 / 3);
+
+        ringMeshes.children[4].rotation.z = Math.PI / 3;
+        ringMeshes.children[4].rotateX(Math.acos(1 / 3));
+        //ringMeshes.children[4].rotateZ(Math.PI * 1 / 3);
+        ringMeshes.children[4].children[1].rotateZ(Math.PI * 1 / 3);
+        ringMeshes.children[4].children[2].rotateZ(Math.PI * 2 / 3);
+
+        ringMeshes.children[5].rotation.z = Math.PI * -1 / 3;
+        ringMeshes.children[5].rotateX(Math.acos(1 / 3));
+        //ringMeshes.children[5].rotateZ(Math.PI * 1 / 3);
+        ringMeshes.children[5].children[1].rotateZ(Math.PI * 1 / 3);
+        ringMeshes.children[5].children[2].rotateZ(Math.PI * 2 / 3);
+
+        // for reference, temp
+        var tetraMesh = new THREE.Mesh(new THREE.TetrahedronGeometry(60.5), new THREE.MeshBasicMaterial({ wireframe: true}));
+        tetraMesh.rotation.y = Math.PI / 4;
+        tetraMesh.rotation.x = -0.615;
+        tetraMesh.opacity = 0.25;
+        tetraMesh.transparent = true;
+        //scene.add(tetraMesh); // to show
+        window.tetraMesh = tetraMesh; // temp
       }
 
       scene.add(ringMeshes);
