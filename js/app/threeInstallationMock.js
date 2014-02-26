@@ -3,7 +3,7 @@
 define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'app/remote', 'app/utils', 'lodash'],
 function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, remote, utils, _) {
   var allOptions = {
-    configs: ['2', '3', '3,1', '3,2(staggered)', '4', '4,1', '4,2(staggered)', '5', '5,1', '6', '6,1', '6,2(scaled)', '7', '7,1', '7,2', '8', '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', '9', '9,1', '9,2(options)', '10,1', '12,1', '12,2', '16'],
+    configs: ['2', '3', '3,1', '3,2(staggered)', '4', '4,1', '4,2(staggered)', '5', '5,1', '6', '6,1', '6,2(scaled)', '6,3', '7', '7,1', '7,2', '8', '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', '9', '9,1', '9,2(options)', '10,1', '12,1', '12,2', '16'],
     modes: ['auto', 'full', 'random', 'listen'],
     //lprs: {min: 2, max: 960},
     sss: ['soft', 'star'],
@@ -168,6 +168,41 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           if (arrangement === 2) {
             ringGroup.scale = new THREE.Vector3(0.9, 0.9, 0.9);
           }
+        } else if (arrangement === 3) {
+          ringMeshes.children[0].rotateZ(Math.PI * 1 / 6);
+          ringMeshes.children[1].rotateZ(Math.PI * 3 / 6);
+          ringMeshes.children[2].rotateZ(Math.PI * 5 / 6);
+
+          var ringGroup = new THREE.Object3D();
+          ringMeshes.remove(rings[3]);
+          ringMeshes.remove(rings[4]);
+          ringGroup.add(rings[3]);
+          ringGroup.add(rings[4]);
+
+          var ringGroup2 = new THREE.Object3D();
+          ringMeshes.remove(rings[5]);
+          ringGroup2.add(rings[5]);
+
+          ringMeshes.add(ringGroup);
+          ringMeshes.add(ringGroup2);
+
+          ringMeshes.children[3].rotation.x = Math.acos(-1 / 3);
+          ringMeshes.children[3].children[0].rotateZ(Math.PI * 1 / 6);
+          ringMeshes.children[3].children[1].rotateZ(Math.PI * 5 / 6);
+
+          ringMeshes.children[4].rotation.z = Math.PI / 3;
+          ringMeshes.children[4].rotateX(Math.acos(1 / 3));
+          ringMeshes.children[4].children[0].rotateZ(Math.PI * 5 / 6);
+
+          // for reference, temp
+          var tetraMesh = new THREE.Mesh(new THREE.TetrahedronGeometry(60.5), new THREE.MeshBasicMaterial({ wireframe: true}));
+          tetraMesh.rotation.y = Math.PI / 4;
+          tetraMesh.rotation.x = -0.615;
+          tetraMesh.opacity = 0.25;
+          tetraMesh.transparent = true;
+          window.showTetrahedron = function(){
+            scene.add(tetraMesh);
+          };
         }
       } else if (numOfRings === 7) {
         if (arrangement === 1) {
@@ -518,8 +553,9 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           tetraMesh.rotation.x = -0.615;
           tetraMesh.opacity = 0.25;
           tetraMesh.transparent = true;
-          //scene.add(tetraMesh); // to show
-          window.tetraMesh = tetraMesh; // temp
+          window.showTetrahedron = function(){
+            scene.add(tetraMesh);
+          };
         } else if (arrangement === 2) {
           ringMeshes.children[0].rotation.x = Math.PI * 1 / 8;
           ringMeshes.children[1].rotation.x = Math.PI * 3 / 8;
@@ -586,7 +622,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         scene.updateMatrixWorld();
         for (i = 0, l = numOfRings; i < l; i++) {
           var circle = circles[i].children[0];
-          for (j = 0, m = counterMax; j < m; j++) {
+          for (j = 1, m = counterMax; j < m; j++) {
             //var coords = circle.geometry.vertices[j].clone();
             //coords.applyMatrix4(circle.matrixWorld);
             var coords = circle.localToWorld(circle.geometry.vertices[j].clone());
