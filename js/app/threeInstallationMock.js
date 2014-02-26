@@ -293,9 +293,20 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           ringGroup.rotation.x = Math.PI * 1 / 8;
           ringGroup.rotation.y = Math.PI * 1 / 8;
           ringGroup.rotation.z = Math.PI * 1 / 2;
-        } else { // 5
-          ringMeshes.children[0].rotation.x = Math.PI * 1 / 4;
-          ringMeshes.children[1].rotation.x = Math.PI * 3 / 4;
+        } else if (arrangement === 5) {
+          var angle1 = 1 + Math.round(Math.random() * 6); // 1 - 7
+          var angle2 = 1 + Math.round(Math.random() * 6); // 1 - 7
+
+          angle2 = prompt('angle1, angle2', angle1 + ',' + angle2);
+          angle1 = parseInt(angle2.split(',')[0]);
+          angle2 = parseInt(angle2.split(',')[1]);
+          console.log('angle1, angle2', angle1, angle2);
+
+          var angle3 = 16 - angle1;
+          var angle4 = 16 - angle2;
+
+          ringMeshes.children[0].rotation.x = Math.PI * angle1 / 16;
+          ringMeshes.children[1].rotation.x = Math.PI * angle3 / 16;
 
           var ringGroup = new THREE.Object3D();
           ringMeshes.remove(rings[2]);
@@ -317,21 +328,19 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
 
           ringMeshes.add(ringGroup);
-          ringMeshes.children[2].children[0].rotation.x = Math.PI * 1 / 4;
-          ringMeshes.children[2].children[1].rotation.x = Math.PI * 3 / 4;
+          ringMeshes.children[2].children[0].rotation.x = Math.PI * angle2 / 16;
+          ringMeshes.children[2].children[1].rotation.x = Math.PI * angle4 / 16;
           ringGroup.rotation.y = Math.PI * 1 / 4;
 
           ringMeshes.add(ringGroup2);
-          ringMeshes.children[3].children[0].rotation.x = Math.PI * 1 / 4;
-          ringMeshes.children[3].children[1].rotation.x = Math.PI * 3 / 4;
+          ringMeshes.children[3].children[0].rotation.x = Math.PI * angle1 / 16;
+          ringMeshes.children[3].children[1].rotation.x = Math.PI * angle3 / 16;
           ringGroup2.rotation.y = Math.PI * 2 / 4;
 
           ringMeshes.add(ringGroup3);
-          ringMeshes.children[4].children[0].rotation.x = Math.PI * 1 / 4;
-          ringMeshes.children[4].children[1].rotation.x = Math.PI * 3 / 4;
+          ringMeshes.children[4].children[0].rotation.x = Math.PI * angle2 / 16;
+          ringMeshes.children[4].children[1].rotation.x = Math.PI * angle4 / 16;
           ringGroup3.rotation.y = Math.PI * 3 / 4;
-
-          window.ringMeshes = ringMeshes;
         }
       } else if (numOfRings === 9) {
         // 1
