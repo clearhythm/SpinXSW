@@ -42,14 +42,19 @@ h1 { margin: 80px 0; font-size: 300% }
 /* THREE options */
 #threeOptions {
   position: absolute;
+  right: 0;
   top: 0;
-  right: 3px;
+  margin: 1px;
   opacity: 0.67;
   font-size: 0.67em;
   text-align: right;
 }
+#threeOptions select {
+  margin: 0;
+}
 #threeOptions input[type="text"] {
   width: 3em;
+  margin: 2px;
 }
 #threeOptions input[type="submit"]:disabled {
   color: #555;
