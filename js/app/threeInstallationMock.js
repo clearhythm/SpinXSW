@@ -9,7 +9,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     sss: ['soft', 'star'],
     showRingss: [true, false],
     useDirectionalLights: [true, false],
-    useAmbientLights: [true, false]
+    useAmbientLights: [true, false],
+    hueTypes: [0, 1, 2, 3, 4]
   };
   var defaultOptions = {
     config: '3',
@@ -25,7 +26,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     ringWidth: 1.5,
     ringDepth: 0.5,
     spriteGap: 1, // distance between sprite and ring
-    spriteScale: 4
+    spriteScale: 4,
+    hueType: 0 // only affects o.mode === 'full'
   };
   var o = {};
   var ringRadius = 59;
@@ -94,7 +96,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       circle = new THREE.Line(circleGeometry, material.line);
       circle.rotation.x = Math.PI / 2;
       circle.visible = false;
-      counterMax = circle.geometry.vertices.length;
+      counterMax = circle.geometry.vertices.length - 1;
       ringMesh.add(circle); // .clone()?
 
       if (o.cover) { // todo
@@ -352,8 +354,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           ringGroup.rotation.y = Math.PI * 1 / 8;
           ringGroup.rotation.z = Math.PI * 1 / 2;
         } else if (arrangement === 5) {
-          var angle1 = 1 + Math.round(Math.random() * 6); // 1 - 7
-          var angle2 = 1 + Math.round(Math.random() * 6); // 1 - 7
+          var angle1 = _.random(1, 7);
+          var angle2 = _.random(1, 7);
 
           angle2 = prompt('angle1, angle2 (1-7)', angle1 + ',' + angle2);
           angle1 = parseInt(angle2.split(',')[0]);
@@ -432,7 +434,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           ringMeshes.children[5].children[1].rotation.x = Math.PI * 3 / 4;
           ringGroup2.rotation.y = Math.PI * 1 / 2;
         } else if (arrangement === 2) {
-          var angle1 = 1 + Math.round(Math.random() * 6); // 1 - 7
+          var angle1 = _.random(1, 7);
 
           angle1 = parseInt(prompt('angle1 (range: 1-7)', angle1));
           window.setTimeout(function(){ // hack
@@ -628,31 +630,58 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         }
       } else if (o.mode === 'full') {
         scene.updateMatrixWorld();
+
+        if (o.hueType === 2) {
+          var hueLength = _.random(0.001, 5);
+        }
+
         for (i = 0, l = numOfRings; i < l; i++) {
           var circle = circles[i].children[0];
-          for (j = 1, m = counterMax; j < m; j++) {
-            //var coords = circle.geometry.vertices[j].clone();
-            //coords.applyMatrix4(circle.matrixWorld);
+
+          if (o.hueType === 1) {
+            var hueStart = Math.random();
+            var hueLength = _.random(0.001, 5);
+            var hueStep = utils.plusOrMinus() * hueLength / counterMax;
+          } else if (o.hueType === 2) {
+            var hueStart = Math.random();
+            var hueStep = utils.plusOrMinus() * hueLength / counterMax;
+          } else if (o.hueType === 4) {
+            var hue = Math.random();
+          }
+
+          for (j = 0, m = counterMax; j < m; j++) {
             var coords = circle.localToWorld(circle.geometry.vertices[j].clone());
-            var hue = j / m;
+
+            if (o.hueType === 0) {
+              var hue = j / m;
+            } else if (o.hueType === 1 || o.hueType === 2) {
+              var hue = utils.constrainPeriodic(hueStart + hueStep * j, 1, true);
+            } else if (o.hueType === 3) {
+              var hue = Math.random();
+            } else if (o.hueType === 4) {
+              hue = utils.constrainPeriodic(hue + _.random(-0.05, 0.05), true);
+            }
+
             threeInstallationMock.addSprite(hue, 1, 0.5, coords.x, coords.y, coords.z, 1, false);
           }
         }
       } else if (o.mode === 'random') {
         scene.updateMatrixWorld();
         for (i = 0, l = numOfRings; i < l; i++) {
-          var startPosition = Math.round(Math.random() * counterMax);
-          var direction = Math.round(Math.random()) * 2 - 1;
-          var length = Math.round(Math.random() * counterMax / 8);
+          var startPosition = _.random(counterMax);
+          var direction = utils.plusOrMinus();
+          var length = _.random(Math.round(counterMax / 4));
           var circle = circles[i].children[0];
           console.log('i, startPosition, direction, length', i, startPosition, direction, length);
           for (j = 0, m = length; j < m; j++) {
-            var vIndex = (startPosition + (direction * j)) % counterMax;
-            if (vIndex < 0) vIndex = counterMax + vIndex;
+            var vIndex = utils.constrainPeriodic(startPosition + direction * j, counterMax);
             var lightness = (1 - (j / length)) / 2;
-            console.log('i, j, vIndex, counterMax, lightness', i, j, vIndex, counterMax, lightness);
             var coords = circle.localToWorld(circle.geometry.vertices[vIndex].clone());
-            threeInstallationMock.addSprite(colorPallete[i % colorPallete.length].hue, 1, lightness, coords.x, coords.y, coords.z, 1, true, 5 * lightness, 250);
+            if (j === 0) {
+              threeInstallationMock.addSprite(colorPallete[i % colorPallete.length].hue, 1, lightness, coords.x, coords.y, coords.z, 1, true, 2.5, 250);
+            } else {
+              threeInstallationMock.addSprite(colorPallete[i % colorPallete.length].hue, 1, lightness, coords.x, coords.y, coords.z, 1);
+            }
           }
         }
       }
@@ -726,6 +755,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           <label for="showRings">Show rings:</label><select name="showRings"></select><br>\
           <label for="useDirectionalLight">Directional light:</label><select name="useDirectionalLight"></select><br>\
           <label for="useAmbientLight">Ambient light:</label><select name="useAmbientLight"></select><br>\
+          <label for="hueType">Hue type (if mode=full):</label><select name="hueType"></select><br>\
           <label for="lpr">Lights per ring:</label><input type="text" name="lpr" value="' + o.lpr + '"><br>\
           <label for="ringRadius">Ring radius:</label><input type="text" name="ringRadius" value="' + o.ringRadius + '"><br>\
           <label for="ringWidth">Ring width:</label><input type="text" name="ringWidth" value="' + o.ringWidth + '"><br>\
@@ -744,6 +774,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       threeInstallationMock.addOptionsToSelect($form, 'showRings', 'showRingss');
       threeInstallationMock.addOptionsToSelect($form, 'useDirectionalLight', 'useDirectionalLights');
       threeInstallationMock.addOptionsToSelect($form, 'useAmbientLight', 'useAmbientLights');
+      threeInstallationMock.addOptionsToSelect($form, 'hueType', 'hueTypes');
 
       $form.on('change input', function(){
         $('input[type=submit]', this).removeAttr('disabled');
@@ -755,6 +786,10 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           $('select[name=useAmbientLight]', $form).remove();
           $('input[name=ringWidth]', $form).remove();
           $('input[name=ringDepth]', $form).remove();
+        }
+
+        if ($('select[name=mode]', $form).val() !== 'full') {
+          $('select[name=hueType]', $form).remove();
         }
 
         $('select, input', this).each(function(){
@@ -796,7 +831,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           // todo: why don't these sprites have lights?
           threeInstallationMock.addSprite(colorPallete[i % colorPallete.length].hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
 
-          var whichRing = Math.round((numOfRings - 1) * Math.random());
+          var whichRing = _.random(numOfRings - 1);
 
           console.log('pName, i, whichRing', pName, i, whichRing);
 

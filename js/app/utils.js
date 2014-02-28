@@ -35,5 +35,22 @@ define({
     }
 
     return output;
+  },
+
+  plusOrMinus: function(){
+    // Randomly returns -1 or 1
+    return Math.round(Math.random()) * 2 - 1;
+  },
+
+  constrainPeriodic: function (val, max, maxInclusive) {
+    if (maxInclusive && val === max) return val;
+
+    val = val % max;
+
+    if (val < 0) {
+      val = max + val;
+    }
+
+    return val;
   }
 });
