@@ -103,12 +103,12 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         ringMesh.add(torusMesh); // .clone()?
       }
 
-      numOfRings = parseInt(o.config.split(',')[0]);
-      arrangement = o.config.split(',')[1];
-      if (typeof arrangement === 'undefined') {
+      if (_.isNumber(o.config)) {
+        numOfRings = o.config;
         arrangement = 0;
       } else {
-        arrangement = parseInt(arrangement);
+        numOfRings = parseInt(o.config.split(',')[0]);
+        arrangement = parseInt(o.config.split(',')[1]);
       }
 
       for (i = 0, l = numOfRings; i < l; i++) {
