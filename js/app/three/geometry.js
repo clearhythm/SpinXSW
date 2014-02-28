@@ -1,8 +1,4 @@
 define(['three', 'ThreeBSP', 'lodash'], function (THREE, ThreeBSP, _) {
-  var bandOuterRadius = 100;
-  var bandWidth = bandOuterRadius / 50;
-  var bandThickness = bandOuterRadius / 100;
-
   var geometry = {
     makeRing: function (options) {
       var o = _.merge({

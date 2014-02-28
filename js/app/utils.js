@@ -14,5 +14,26 @@ define({
     } else {
       return {};
     }
+  },
+
+  // todo: Support more types? Find a better function? Just threw this one together.
+  stringToType: function (inputString) {
+    var output = inputString;
+    var strAsNum;
+
+    if (typeof inputString === 'string') {
+      if (inputString === 'true') {
+        output = true;
+      } else if (inputString === 'false') {
+        output = false;
+      } else {
+        strAsNum = parseFloat(inputString);
+        if (inputString.replace(/^(-*\d+)\.0$/, '$1') === '' + strAsNum) {
+          return strAsNum;
+        }
+      }
+    }
+
+    return output;
   }
 });

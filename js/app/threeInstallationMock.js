@@ -3,23 +3,31 @@
 define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'app/remote', 'app/utils', 'lodash'],
 function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, remote, utils, _) {
   var allOptions = {
-    configs: ['2', '3', '3,1', '3,2(staggered)', '4', '4,1', '4,2(staggered)', '5', '5,1', '6', '6,1', '6,2(scaled)', '6,3', '7', '7,1', '7,2', '8', '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', '9', '9,1', '9,2(options)', '10,1', '12,1', '12,2', '16'],
+    configs: ['2', '3', '3,1', '3,2(staggered)', '4', '4,1', '4,2(staggered)', '5', '5,1', '6', '6,1', '6,2(scaled)', '6,3(tetra)', '7', '7,1', '7,2', '8', '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', '9', '9,1', '9,2(options)', '10,1', '12,1(tetra)', '12,2', '16'],
     modes: ['auto', 'full', 'random', 'listen'],
     //lprs: {min: 2, max: 960},
     sss: ['soft', 'star'],
+    showRingss: [true, false],
     useDirectionalLights: [true, false],
     useAmbientLights: [true, false]
   };
-  var o = {
+  var defaultOptions = {
     config: '3',
     mode: 'auto', // 'auto', 'full', 'random', 'listen'
     lpr: 128, // Lights per ring
     ss: 'soft', // sprite style: 'soft', 'star',
     cover: false, // light cover
+    showRings: true,
     lightOnly: false, // no sprite
     useDirectionalLight: true,
-    useAmbientLight: true
+    useAmbientLight: true,
+    ringRadius: 59,
+    ringWidth: 1.5,
+    ringDepth: 0.5,
+    spriteGap: 1, // distance between sprite and ring
+    spriteScale: 4
   };
+  var o = {};
   var ringRadius = 59;
   var colorPallete = [
     {hue: 0,    name: 'red'},
@@ -60,29 +68,29 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
       options = utils.getToObject();
       for (option in options) {
-        if (options[option] === 'true') {
-          options[option] = true;
-        } else if (options[option] === 'false') {
-          options[option] = false;
-        }
+        options[option] = utils.stringToType(options[option]);
       }
-      _.merge(o, options);
+      _.merge(o, defaultOptions, options);
       console.log('o', o);
 
       // LIGHTS
 
-      if (o.useDirectionalLight) {
+      if (o.useDirectionalLight && o.showRings) {
         light.addDirectional();
       }
-      if (o.useAmbientLight) {
+      if (o.useAmbientLight && o.showRings) {
         light.addAmbient();
       }
 
       // RINGS
 
-      ringMesh = new THREE.Mesh(geometry.makeRing(), material.whitePlastic);
+      ringMesh = new THREE.Mesh(geometry.makeRing({ radius: o.ringRadius, width: o.ringWidth, depth: o.ringDepth }), material.whitePlastic);
 
-      circleGeometry = geometry.makeCircle({ segments: parseInt(o.lpr) });
+      if (o.showRings === false) {
+        ringMesh.visible = false;
+      }
+
+      circleGeometry = geometry.makeCircle({ radius: o.ringRadius + o.spriteGap, segments: parseInt(o.lpr) });
       circle = new THREE.Line(circleGeometry, material.line);
       circle.rotation.x = Math.PI / 2;
       circle.visible = false;
@@ -604,10 +612,10 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
       if (o.ss === 'star') {
         spriteMesh = new THREE.Sprite(material.starSprite);
-        spriteMesh.scale.set(6, 6, 6); // todo: not hard-coded
+        spriteMesh.scale.set(o.spriteScale * 1.5, o.spriteScale * 1.5, o.spriteScale * 1.5);
       } else {
         spriteMesh = new THREE.Sprite(material.softSprite);
-        spriteMesh.scale.set(4, 4, 4); // todo: not hard-coded
+        spriteMesh.scale.set(o.spriteScale, o.spriteScale, o.spriteScale);
       }
 
       if (o.mode === 'auto') {
@@ -710,33 +718,60 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     },
 
     insertControls: function(){
-      $(container).parent().append('<div id="threeOptions"></div>');
-      $('#threeOptions').html('<form>\
-        <label for="config">Ring configuration:</label><select name="config"></select><br>\
-        <label for="mode">Mode:</label><select name="mode"></select><br>\
-        <label for="ss">Sprite style:</label><select name="ss"></select><br>\
-        <label for="ss">Directional light:</label><select name="useDirectionalLight"></select><br>\
-        <label for="ss">Ambient light:</label><select name="useAmbientLight"></select><br>\
-        <label for="lpr">Lights per ring:</label><input type="text" name="lpr" value="' + o.lpr + '"><br>\
-        <input type="submit" value="Apply" disabled="disabled">\
-      </form>');
+      $(container).parent().append('<div id="threeOptions">\
+        <form>\
+          <label for="config">Ring configuration:</label><select name="config"></select><br>\
+          <label for="mode">Mode:</label><select name="mode"></select><br>\
+          <label for="ss">Sprite style:</label><select name="ss"></select><br>\
+          <label for="showRings">Show rings:</label><select name="showRings"></select><br>\
+          <label for="useDirectionalLight">Directional light:</label><select name="useDirectionalLight"></select><br>\
+          <label for="useAmbientLight">Ambient light:</label><select name="useAmbientLight"></select><br>\
+          <label for="lpr">Lights per ring:</label><input type="text" name="lpr" value="' + o.lpr + '"><br>\
+          <label for="ringRadius">Ring radius:</label><input type="text" name="ringRadius" value="' + o.ringRadius + '"><br>\
+          <label for="ringWidth">Ring width:</label><input type="text" name="ringWidth" value="' + o.ringWidth + '"><br>\
+          <label for="ringDepth">Ring depth:</label><input type="text" name="ringDepth" value="' + o.ringDepth + '"><br>\
+          <label for="spriteGap">Sprite gap:</label><input type="text" name="spriteGap" value="' + o.spriteGap + '"><br>\
+          <label for="spriteScale">Sprite scale:</label><input type="text" name="spriteScale" value="' + o.spriteScale + '"><br>\
+          <input type="submit" value="Apply" disabled="disabled">\
+        </form>\
+      </div>');
 
-      threeInstallationMock.addOptionsToSelect('config', 'configs');
-      threeInstallationMock.addOptionsToSelect('mode', 'modes');
-      threeInstallationMock.addOptionsToSelect('ss', 'sss');
-      threeInstallationMock.addOptionsToSelect('useDirectionalLight', 'useDirectionalLights');
-      threeInstallationMock.addOptionsToSelect('useAmbientLight', 'useAmbientLights');
+      var $form = $('#threeOptions form');
 
-      $('#threeOptions form').on('change input', function(){
-        $('#threeOptions form input[type=submit]').removeAttr('disabled');
+      threeInstallationMock.addOptionsToSelect($form, 'config', 'configs');
+      threeInstallationMock.addOptionsToSelect($form, 'mode', 'modes');
+      threeInstallationMock.addOptionsToSelect($form, 'ss', 'sss');
+      threeInstallationMock.addOptionsToSelect($form, 'showRings', 'showRingss');
+      threeInstallationMock.addOptionsToSelect($form, 'useDirectionalLight', 'useDirectionalLights');
+      threeInstallationMock.addOptionsToSelect($form, 'useAmbientLight', 'useAmbientLights');
+
+      $form.on('change input', function(){
+        $('input[type=submit]', this).removeAttr('disabled');
+      });
+
+      $form.on('submit', function(e){
+        if ($('select[name=showRings]', $form).val() === 'false') {
+          $('select[name=useDirectionalLight]', $form).remove();
+          $('select[name=useAmbientLight]', $form).remove();
+          $('input[name=ringWidth]', $form).remove();
+          $('input[name=ringDepth]', $form).remove();
+        }
+
+        $('select, input', this).each(function(){
+          var elName = $(this).attr('name');
+          var val = utils.stringToType($(this).val());
+          if (defaultOptions[elName] === val) {
+            $(this).remove();
+          }
+        });
       });
     },
 
-    addOptionsToSelect: function(singular, plural){
+    addOptionsToSelect: function($form, singular, plural){
       for (i = 0, l = allOptions[plural].length; i < l; i++) {
-        $('#threeOptions select[name=' + singular + ']').append('<option value="' + allOptions[plural][i] + '">' + allOptions[plural][i] + '</option>');
+        $('select[name=' + singular + ']', $form).append('<option value="' + allOptions[plural][i] + '">' + allOptions[plural][i] + '</option>');
         if (o[singular] === allOptions[plural][i]) {
-          $('#threeOptions select[name=' + singular + '] option:last-child').attr('selected', true);
+          $('select[name=' + singular + '] option:last-child', $form).attr('selected', true);
         }
       }
     },
