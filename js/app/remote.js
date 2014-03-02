@@ -1,5 +1,5 @@
-define(['reconnectingwebsocket'],
-function (ReconnectingWebSocket) {
+define(['reconnectingwebsocket', 'lodash'],
+function (ReconnectingWebSocket, _) {
   var ws;
 
   var remote = {
@@ -22,10 +22,13 @@ function (ReconnectingWebSocket) {
       }; */
     },
 
-    registerSelfAs: function (aType) {
+    registerSelfAs: function (aType, extra) {
+      var message = {register: aType};
+      if (extra) _.merge(message, extra);
+
       ws.onopen = function(){
         console.log('Registering self as "' + aType + '"');
-        remote.send({register: aType});
+        remote.send(message);
       };
     },
 

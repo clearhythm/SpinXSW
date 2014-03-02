@@ -1,3 +1,5 @@
+// TODO: clients don't know when they've been disconnected due to timeout
+
 define(['jquery', 'shake', 'app/remote'],
 function ($, shake, remote) {
   var data_frequency = 1; // todo: polling interval at which to send client device data, '1' sends all data, '10' would be send every 10th data point
@@ -13,7 +15,9 @@ function ($, shake, remote) {
     {hue: 0.76, name: 'purple'},
     {hue: 0.54, name: 'light blue'}
   ];
+  var playerColor;
   var score = 0;
+  var lastAngle;
 
   var clientUI = {
     init: function(){
@@ -58,7 +62,12 @@ function ($, shake, remote) {
       $('#client_ui .colorPicker button').on('click', function(){
         $('.colorPicker').remove();
         $('.score').show();
-        remote.send({ color: $(this).attr('name') });
+        playerColor = $(this).attr('name');
+        remote.send({ color: playerColor });
+
+        // todo: this overwrites the first, or are there two now?
+        remote.registerSelfAs('client', {color: playerColor});
+
         clientUI.listenSensors();
       });
     },
@@ -80,16 +89,16 @@ function ($, shake, remote) {
     },
 
     eventListener: function (e) {
-      var client_angle = e.alpha;
-      if (client_angle !== null) {
-        client_angle = Math.round(client_angle);
-        // normalize compass direction across devices
-        //if (typeof(window.starting_angle) === 'undefined') window.starting_angle = client_angle;
-        //var client_angle = Math.floor(Math.abs(client_angle - window.starting_angle));
-        //var client_angle = Math.abs(360 - client_angle); // flip orientation so angles go more positive as user rotates clockwise
-        // send compass angle to node server, and update screen to reflect which way user is pointing
-        clientUI.sendSensorData(client_angle);
-        clientUI.updateScreenCoordinates(client_angle);
+      var angleAlpha = e.alpha;
+      if (typeof angleAlpha === 'number') {
+        angleAlpha = Math.round(angleAlpha);
+
+        if (angleAlpha !== lastAngle) {
+          // send compass angle to node server, and update screen to reflect which way user is pointing
+          clientUI.sendSensorData(angleAlpha);
+          clientUI.updateScreenCoordinates(angleAlpha);
+          lastAngle = angleAlpha;
+        }
       } else {
         this.removeEventListener('deviceorientation', clientUI.eventListener, false);
         clientUI.fallback(1);

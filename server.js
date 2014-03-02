@@ -31,14 +31,36 @@ wss.on('connection', function(ws) {
   ws.on('message', function(data, flags) {
     console.log('received from id=' + id +', the following message: ' + data);
     var message = JSON.parse(data);
+
     if (message.register) {
       clientTypeCounts[clients[id].type] -= 1;
       clients[id].type = message.register;
       clientTypeCounts[clients[id].type] = clientTypeCounts[clients[id].type] ? clientTypeCounts[clients[id].type] + 1 : 1;
       console.log('Registered client id=' + id + ' as type=' + message.register);
-      ws.send(JSON.stringify({clientTypeCounts: clientTypeCounts}));
-      console.log('Sent to client id=' + id + ' this message: ' + JSON.stringify({clientTypeCounts: clientTypeCounts}));
+
+      if (clients[id].type === 'client') {
+        if (message.color) {
+          clients[id].color = message.color;
+        }
+
+        // Used by clients to determine if an installation is "listening" or not
+        ws.send(JSON.stringify({clientTypeCounts: clientTypeCounts}));
+      } else if (clients[id].type === 'installation') {
+        // Used by installations to add existing clients to the "game"
+        var clientList = [], i;
+        for (i in clients) {
+          if (clients[i].type === 'client') {
+            console.log('client.color', clients[i].color);
+            clientList.push({id: i, color: clients[i].color});
+          }
+        }
+        ws.send(JSON.stringify({ clients: clientList }));
+      }
     } else {
+      if (message.color) {
+        clients[id].color = message.color;
+      }
+
       wss.broadcast(data, id);
     }
   });

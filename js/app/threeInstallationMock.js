@@ -55,6 +55,9 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
   var spriteMesh;
   var cullIntervalID;
   var cullInterval = 15 * 1000; // remove players after 15 seconds of inactivity
+  var gestureMapping = {
+    'shake': 'changePlayerRing'
+  };
 
   var threeInstallationMock = {
     stats: null,
@@ -823,8 +826,13 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           console.log('onmessage', event, message);
         }
 
-        if (message.clientTypeCounts) {
-          console.log('onmessage', event, message);
+        if (message.clients) {
+          console.log('adding existing clients', message.clients);
+          var i, l, client;
+          for (i = 0, l = message.clients.length; i < l; i++) {
+            client = message.clients[i];
+            threeInstallationMock.addNewPlayer('p' + client.id, {color: client.color});
+          }
           return;
         }
 
@@ -842,55 +850,25 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
             return;
           }
 
-          var colorChoice = colorPallete[_.findIndex(colorPallete, {name: message.data.color})];
-          if (colorChoice === void 0) {
-            // todo: handle this
-            console.error('WTF?', event, message, message.data.color);
-            colorChoice = _.sample(colorPallete);
-          }
-
-          if (typeof cullIntervalID === 'undefined') {
-            cullIntervalID = window.setInterval(threeInstallationMock.cullIdlePlayers, cullInterval);
-          }
-
-          var i = coloredLights.children.length;
-
-          // todo: why don't these sprites have lights?
-          threeInstallationMock.addSprite(colorChoice.hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
-
-          var whichRing = _.random(numOfRings - 1);
-
-          console.log('pName, i, whichRing', pName, i, whichRing);
-
-          players[pName] = {
-            sprite: coloredLights.children[i],
-            position: 0,
-            ring: whichRing,
-            circle: ringMeshes.children[whichRing].children[0],
-            active: true
-          };
+          threeInstallationMock.addNewPlayer(pName, message.data);
 
           return;
         }
 
         var player = players[pName];
+        var position = player.position;
 
         if (message.data.gesture !== void 0) {
-          if (message.data.gesture === 'shake') {
-            var newRing = _.random(numOfRings - 2);
-            if (newRing >= player.ring) newRing += 1;
-            console.log('Shake! Player ' + senderID + ' moving from ring ' + player.ring + ' to ring ' + newRing + '.');
-            player.ring = newRing;
-            player.circle = ringMeshes.children[newRing].children[0];
-            player.dirty = true;
-            var position = player.position;
+          var gesture = message.data.gesture;
+          if (typeof threeInstallationMock[gestureMapping[gesture]] === 'function') {
+            threeInstallationMock[gestureMapping[gesture]](player);
           } else {
-            // todo: huh?
-            console.error('unknown gesture', message.data.gesture, typeof message.data.gesture);
+          // todo: huh?
+            console.error('Unknown gesture', gesture, typeof gesture);
             return;
           }
         } else {
-          var position = Math.floor(message.data / 360 * parseInt(o.lpr));
+          position = Math.floor(message.data / 360 * parseInt(o.lpr));
         }
 
         //console.log('message.data, position', message.data, position);
@@ -907,6 +885,45 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         // mark player as active (used by `cullIdlePlayers`)
         player.active = true;
       });
+    },
+
+    addNewPlayer: function (pName, playerData) {
+      var colorChoice = colorPallete[_.findIndex(colorPallete, {name: playerData.color})];
+      if (colorChoice === void 0) {
+        // todo: handle this
+        console.error('Unknown color, assigning random', pName, playerData);
+        colorChoice = _.sample(colorPallete);
+      }
+
+      if (typeof cullIntervalID === 'undefined') {
+        // This is only fired once, when the first player is added
+        cullIntervalID = window.setInterval(threeInstallationMock.cullIdlePlayers, cullInterval);
+      }
+
+      var i = coloredLights.children.length;
+
+      // todo: why don't these sprites have lights?
+      threeInstallationMock.addSprite(colorChoice.hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
+
+      var whichRing = _.random(numOfRings - 1);
+
+      console.log('pName, i, whichRing', pName, i, whichRing);
+
+      players[pName] = {
+        sprite: coloredLights.children[i],
+        position: 0,
+        ring: whichRing,
+        circle: ringMeshes.children[whichRing].children[0],
+        active: true
+      };
+    },
+
+    changePlayerRing: function (player) {
+      var newRing = _.random(numOfRings - 2);
+      if (newRing >= player.ring) newRing += 1;
+      console.log('Changing rings: from ' + player.ring + ' to ' + newRing);
+      player.ring = newRing;
+      player.circle = ringMeshes.children[newRing].children[0];
     },
 
     cullIdlePlayers: function () {
