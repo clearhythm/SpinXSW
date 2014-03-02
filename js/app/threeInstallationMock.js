@@ -25,8 +25,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     ringRadius: 59,
     ringWidth: 1.5,
     ringDepth: 0.5,
-    spriteGap: 1.33, // distance between sprite and ring
-    spriteScale: 4,
+    spriteGap: 2, // distance between sprite and ring
+    spriteScale: 6,
     hueType: 0 // only affects o.mode === 'full'
   };
   var o = {};
@@ -54,7 +54,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
   var stats;
   var spriteMesh;
   var cullIntervalID;
-  var cullInterval = 5 * 1000; // remove players after 5 seconds of inactivity
+  var cullInterval = 15 * 1000; // remove players after 15 seconds of inactivity
 
   var threeInstallationMock = {
     stats: null,
@@ -831,9 +831,9 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         var senderID = message.senderID;
         var pName = 'p' + senderID;
 
-        if (!players[pName]) {
-          message.data = JSON.parse(message.data);
+        message.data = JSON.parse(message.data);
 
+        if (!players[pName]) {
           console.log('onmessage', event, message);
 
           if (!message.data.color) {
@@ -865,6 +865,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           players[pName] = {
             sprite: coloredLights.children[i],
             position: 0,
+            ring: whichRing,
             circle: ringMeshes.children[whichRing].children[0],
             active: true
           };
@@ -874,13 +875,28 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
         var player = players[pName];
 
-        var degrees = message.data;
-        var position = Math.floor(degrees / 360 * parseInt(o.lpr));
+        if (message.data.gesture !== void 0) {
+          if (message.data.gesture === 'shake') {
+            var newRing = _.random(numOfRings - 2);
+            if (newRing >= player.ring) newRing += 1;
+            console.log('Shake! Player ' + senderID + ' moving from ring ' + player.ring + ' to ring ' + newRing + '.');
+            player.ring = newRing;
+            player.circle = ringMeshes.children[newRing].children[0];
+            player.dirty = true;
+            var position = player.position;
+          } else {
+            // todo: huh?
+            console.error('unknown gesture', message.data.gesture, typeof message.data.gesture);
+            return;
+          }
+        } else {
+          var position = Math.floor(message.data / 360 * parseInt(o.lpr));
+        }
 
-        //console.log('message.data, degrees, position', message.data, degrees, position);
+        //console.log('message.data, position', message.data, position);
 
         // for now, only update the lights if user moves into a new light quadrant
-        if (position !== player.position) {
+        if (message.data.gesture !== void 0 || position !== player.position) {
           player.position = position;
           var coords = player.circle.localToWorld(player.circle.geometry.vertices[position].clone());
           player.sprite.position.x = coords.x;

@@ -3,6 +3,7 @@ require.config({
     jquery: ['//ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min', 'lib/jquery-2.1.0.min'],
     reconnectingwebsocket: 'lib/reconnecting-websocket.e86719bb55',
     lodash: ['//cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash.min', 'lib/lodash-2.4.1.min'], // Very similar to underscore
+    shake: 'lib/shake.9fb2c4d3ab', // todo: could use a shim!
 
     // THREE core + components (add-ons & plugins)
     three: 'lib/three/three-aggregate',

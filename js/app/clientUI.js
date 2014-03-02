@@ -1,5 +1,5 @@
-define(['jquery', 'app/remote'],
-function ($, remote) {
+define(['jquery', 'shake', 'app/remote'],
+function ($, shake, remote) {
   var data_frequency = 1; // todo: polling interval at which to send client device data, '1' sends all data, '10' would be send every 10th data point
   var total_arc;
   var colorPallete = [
@@ -13,6 +13,7 @@ function ($, remote) {
     {hue: 0.76, name: 'purple'},
     {hue: 0.54, name: 'light blue'}
   ];
+  var score = 0;
 
   var clientUI = {
     init: function(){
@@ -55,6 +56,8 @@ function ($, remote) {
         $('#client_ui .colorPicker').append('<button name="' + colorPallete[i].name + '" style="background: hsl(' + Math.round(colorPallete[i].hue * 360) + ', 100%, 50%)"></button>');
       }
       $('#client_ui .colorPicker button').on('click', function(){
+        $('.colorPicker').remove();
+        $('.score').show();
         remote.send({ color: $(this).attr('name') });
         clientUI.listenSensors();
       });
@@ -63,6 +66,17 @@ function ($, remote) {
     listenSensors: function(){
       // listen for device orientation changes
       window.addEventListener('deviceorientation', clientUI.eventListener, false);
+
+      window.addEventListener('shake', function(){
+        clientUI.sendGesture('shake');
+        $('#last-gesture').clearQueue().stop().hide(0).html('<h2 class="achievement">Shake it up!</h2>').fadeIn().delay(3000).fadeOut(6000);
+        clientUI.changeScore(50);
+      }, false);
+    },
+
+    changeScore: function (change) {
+      score += change;
+      $('#score').text(score);
     },
 
     eventListener: function (e) {
@@ -80,6 +94,10 @@ function ($, remote) {
         this.removeEventListener('deviceorientation', clientUI.eventListener, false);
         clientUI.fallback(1);
       }
+    },
+
+    sendGesture: function (name) {
+      remote.send({gesture: name});
     },
 
     sendSensorData: function (deg) {

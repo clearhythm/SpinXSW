@@ -7,7 +7,11 @@ h1 { margin: 80px 0; font-size: 300% }
 .raw_data { clear: both; margin: 0 auto; }
 .raw_data td { text-align: center }
 
-.colorPicker button { width: 4em; height: 4em; }
+.colorPicker button { width: 13em; height: 13em; }
+
+.score { font-size: 6em; display: none; }
+
+.achievement { font-size: 6em; }
 
 /* Virtual Light Display */
 #lights { display: block; margin: 50px auto 0 auto; }
