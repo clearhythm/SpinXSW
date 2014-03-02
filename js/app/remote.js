@@ -35,7 +35,7 @@ function (ReconnectingWebSocket) {
         return;
       }
 
-      if (typeof message !== 'string') {
+      if (typeof message === 'object') {
         message = JSON.stringify(message);
       }
 

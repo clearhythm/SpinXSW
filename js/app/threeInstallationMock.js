@@ -3,7 +3,7 @@
 define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'app/remote', 'app/utils', 'lodash'],
 function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, remote, utils, _) {
   var allOptions = {
-    configs: ['2', '3', '3,1', '3,2(staggered)', '4', '4,1', '4,2(staggered)', '5', '5,1', '6', '6,1', '6,2(scaled)', '6,3(tetra)', '7', '7,1', '7,2', '8', '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', '9', '9,1', '9,2(options)', '10,1', '12,1(tetra)', '12,2', '16'],
+    configs: [2, 3, '3,1', '3,2(staggered)', 4, '4,1', '4,2(staggered)', 5, '5,1', 6, '6,1', '6,2(scaled)', '6,3(tetra)', 7, '7,1', '7,2', 8, '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', 9, '9,1', '9,2(options)', '10,1', '12,1(tetra)', '12,2', 16],
     modes: ['auto', 'full', 'random', 'listen'],
     //lprs: {min: 2, max: 960},
     sss: ['soft', 'star'],
@@ -13,7 +13,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     hueTypes: [0, 1, 2, 3, 4]
   };
   var defaultOptions = {
-    config: '3',
+    config: 3,
     mode: 'auto', // 'auto', 'full', 'random', 'listen'
     lpr: 128, // Lights per ring
     ss: 'soft', // sprite style: 'soft', 'star',
@@ -25,7 +25,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     ringRadius: 59,
     ringWidth: 1.5,
     ringDepth: 0.5,
-    spriteGap: 1, // distance between sprite and ring
+    spriteGap: 1.33, // distance between sprite and ring
     spriteScale: 4,
     hueType: 0 // only affects o.mode === 'full'
   };
@@ -49,7 +49,6 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
   var coloredLights = new THREE.Object3D();
   var counter = 0;
   var counterMax;
-  var totalCounter = 0;
   var players = {};
   var verbose = (window.location.search.search('verbose') !== -1);
   var stats;
@@ -697,7 +696,11 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
       threeInstallationMock.animate();
       if (o.mode === 'listen') {
+        remote.init();
+
         threeInstallationMock.listen();
+
+        remote.registerSelfAs('installation');
       }
 
       threeInstallationMock.insertControls();
@@ -781,6 +784,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       });
 
       $form.on('submit', function(e){
+        $(this).hide();
+
         if ($('select[name=showRings]', $form).val() === 'false') {
           $('select[name=useDirectionalLight]', $form).remove();
           $('select[name=useAmbientLight]', $form).remove();
@@ -818,10 +823,32 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           console.log('onmessage', event, message);
         }
 
+        if (message.clientTypeCounts) {
+          console.log('onmessage', event, message);
+          return;
+        }
+
         var senderID = message.senderID;
         var pName = 'p' + senderID;
 
         if (!players[pName]) {
+          message.data = JSON.parse(message.data);
+
+          console.log('onmessage', event, message);
+
+          if (!message.data.color) {
+            // todo, crude: ignoring, assuming it's a sensor message that raced ahead of the initial color message.
+            console.log('ignoring');
+            return;
+          }
+
+          var colorChoice = colorPallete[_.findIndex(colorPallete, {name: message.data.color})];
+          if (colorChoice === void 0) {
+            // todo: handle this
+            console.error('WTF?', event, message, message.data.color);
+            colorChoice = _.sample(colorPallete);
+          }
+
           if (typeof cullIntervalID === 'undefined') {
             cullIntervalID = window.setInterval(threeInstallationMock.cullIdlePlayers, cullInterval);
           }
@@ -829,7 +856,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           var i = coloredLights.children.length;
 
           // todo: why don't these sprites have lights?
-          threeInstallationMock.addSprite(colorPallete[i % colorPallete.length].hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
+          threeInstallationMock.addSprite(colorChoice.hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
 
           var whichRing = _.random(numOfRings - 1);
 
@@ -841,11 +868,13 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
             circle: ringMeshes.children[whichRing].children[0],
             active: true
           };
+
+          return;
         }
 
         var player = players[pName];
 
-        var degrees = parseInt(message.data);
+        var degrees = message.data;
         var position = Math.floor(degrees / 360 * parseInt(o.lpr));
 
         //console.log('message.data, degrees, position', message.data, degrees, position);
@@ -886,20 +915,18 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       controls.update();
 
       if (o.mode === 'auto') {
-        for (i = 0, l = numOfRings; i < l; i++) {
-          circle = circles[i].children[0];
-          coords = circle.localToWorld(circle.geometry.vertices[Math.floor(counter / 10)].clone());
-          if (totalCounter < 11 && counter === 10) {
-            console.log('i, coords', i, coords);
+        if (counter % 4 === 0) {
+          for (i = 0, l = numOfRings; i < l; i++) {
+            circle = circles[i].children[0];
+            coords = circle.localToWorld(circle.geometry.vertices[counter / 4].clone());
+            coloredLights.children[i].position.x = coords.x;
+            coloredLights.children[i].position.y = coords.y;
+            coloredLights.children[i].position.z = coords.z;
           }
-          coloredLights.children[i].position.x = coords.x;
-          coloredLights.children[i].position.y = coords.y;
-          coloredLights.children[i].position.z = coords.z;
         }
 
         counter++;
-        totalCounter++;
-        if (counter % (counterMax * 10) === 0) {
+        if (counter % (counterMax * 4) === 0) {
           counter = 0;
         }
       }

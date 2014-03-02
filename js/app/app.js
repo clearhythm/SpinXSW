@@ -2,16 +2,10 @@ define(['jquery', 'app/remote', 'app/utils'],
 function ($, remote, utils) {
   var app = {
     init: function(){
-      // Establish connection to websocket server
-      remote.init();
-
       // Mobile Clients & Installation get different UIs and data logic
       if (utils.isMobile){
         app.initSwitcher('client');
         app.showClientUI();
-        require(['app/clientUI'], function (clientUI) {
-          clientUI.init();
-        });
       } else {
         // :: Installation Logic (& mock desktop light rig)
         app.initSwitcher('installation')
@@ -42,7 +36,10 @@ function ($, remote, utils) {
     showClientUI: function(){
       $('#installation_ui').hide();
       $('#client_ui').show();
-      remote.registerSelfAs('client');
+
+      require(['app/clientUI'], function (clientUI) {
+        clientUI.init();
+      });
     },
 
     showInstallationUI: function(){
@@ -54,8 +51,6 @@ function ($, remote, utils) {
           $('#installation_ui h1').hide();
         }
       });
-
-      remote.registerSelfAs('installation');
     }
   };
 
