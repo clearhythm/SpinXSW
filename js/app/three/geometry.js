@@ -1,8 +1,4 @@
 define(['three', 'ThreeBSP', 'lodash'], function (THREE, ThreeBSP, _) {
-  var bandOuterRadius = 100;
-  var bandWidth = bandOuterRadius / 50;
-  var bandThickness = bandOuterRadius / 100;
-
   var geometry = {
     makeRing: function (options) {
       var o = _.merge({
@@ -44,6 +40,19 @@ define(['three', 'ThreeBSP', 'lodash'], function (THREE, ThreeBSP, _) {
       circleGeometry.vertices.shift(); // Remove unwanted center vertex
 
       return circleGeometry;
+    },
+
+    makeTorus: function (options) {
+      var o = _.merge({
+        radius: 59,
+        tube: 2,
+        segments: 128,
+        segmentsT: 8
+      }, options);
+
+      var torusGeometry = new THREE.TorusGeometry(o.radius, o.tube, o.segmentsT, o.segments);
+
+      return torusGeometry;
     }
   };
 

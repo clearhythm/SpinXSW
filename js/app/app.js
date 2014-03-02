@@ -52,7 +52,6 @@ function ($, remote, utils) {
       require(['app/threeInstallationMock'], function (threeInstallationMock) {
         if (threeInstallationMock.init()) {
           $('#installation_ui h1').hide();
-          threeInstallationMock.animate();
         }
       });
 

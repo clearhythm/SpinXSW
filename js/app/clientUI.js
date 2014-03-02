@@ -10,10 +10,11 @@ function ($, remote) {
        window.addEventListener('deviceorientation', function(e) {
          var client_angle = e.alpha;
          if (client_angle !== null) {
+           client_angle = Math.round(client_angle);
            // normalize compass direction across devices
-           if (typeof(window.starting_angle) === 'undefined') window.starting_angle = client_angle;
-           var client_angle = Math.floor(Math.abs(client_angle - window.starting_angle));
-           var client_angle = Math.abs(360 - client_angle); // flip orientation so angles go more positive as user rotates clockwise
+           //if (typeof(window.starting_angle) === 'undefined') window.starting_angle = client_angle;
+           //var client_angle = Math.floor(Math.abs(client_angle - window.starting_angle));
+           //var client_angle = Math.abs(360 - client_angle); // flip orientation so angles go more positive as user rotates clockwise
            // send compass angle to node server, and update screen to reflect which way user is pointing
            clientUI.sendSensorData(client_angle);
            clientUI.updateScreenCoordinates(client_angle);
