@@ -3,7 +3,7 @@
 define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'app/remote', 'app/utils', 'lodash'],
 function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, remote, utils, _) {
   var allOptions = {
-    configs: [2, 3, '3,1', '3,2(staggered)', 4, '4,1', '4,2(staggered)', 5, '5,1', 6, '6,1', '6,2(scaled)', '6,3(tetra)', 7, '7,1', '7,2', 8, '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', 9, '9,1', '9,2(options)', '9,3(globe)', '9,4(globe)', '9,5(globe)', '9,6(globe)', '10,1', '12,1(tetra)', '12,2', 16],
+    configs: [2, 3, '3,1', '3,2(staggered)', 4, '4,1', '4,2(staggered)', 5, '5,1', 6, '6,1', '6,2(scaled)', '6,3(tetra)', 7, '7,1', '7,2', 8, '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', '8,6', 9, '9,1', '9,2(options)', '9,3(globe)', '9,4(globe)', '9,5(globe)', '9,6(globe)', '10,1', '12,1(tetra)', '12,2', 16],
     modes: ['auto', 'full', 'random', 'listen'],
     //lprs: {min: 2, max: 960},
     sss: ['soft', 'star'],
@@ -405,6 +405,27 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           ringMeshes.children[4].children[0].rotation.x = Math.PI * angle2 / 16;
           ringMeshes.children[4].children[1].rotation.x = Math.PI * angle4 / 16;
           ringGroup3.rotation.y = Math.PI * 3 / 4;
+        } else if (arrangement === 6) {
+          threeInstallationMock.arrangeRingsRadially(6);
+
+          var ringGroup = new THREE.Object3D();
+          ringMeshes.remove(rings[6]);
+          ringMeshes.remove(rings[7]);
+          ringGroup.add(rings[6]);
+          ringGroup.add(rings[7]);
+          ringMeshes.add(ringGroup);
+          ringMeshes.children[6].rotation.z = Math.PI * 1 / 2;
+
+          if (arrangement === 6) {
+            var scale = 0.907;
+            var distance = 25;
+          }
+
+          ringMeshes.children[6].children[0].scale = new THREE.Vector3(scale, scale, scale);
+          ringMeshes.children[6].children[0].position.y = -1 * distance;
+
+          ringMeshes.children[6].children[1].scale = new THREE.Vector3(scale, scale, scale);
+          ringMeshes.children[6].children[1].position.y = distance;
         }
       } else if (numOfRings === 9) {
         if (arrangement === 1) {
