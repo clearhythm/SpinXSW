@@ -1,7 +1,7 @@
 // todo: make sure all ".clones()" are necessary, and faster than just recreating geometry (probably)
 
-define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'app/remote', 'app/utils', 'lodash'],
-function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, remote, utils, _) {
+define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'app/utils', 'lodash'],
+function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, utils, _) {
   var allOptions = {
     configs: [2, 3, '3,1', '3,2(staggered)', 4, '4,1', '4,2(staggered)', 5, '5,1', 6, '6,1', '6,2(scaled)', '6,3(tetra)', 7, '7,1', '7,2', '7,3(options)', 8, '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', '8,6', 9, '9,1', '9,2(options)', '9,3(globe)', '9,4(globe)', '9,5(globe)', '9,6(globe)', '10,1', '12,1(tetra)', '12,2', 16],
     modes: ['auto', 'full', 'random', 'listen'],
@@ -50,14 +50,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
   var counter = 0;
   var counterMax;
   var players = {};
-  var verbose = (window.location.search.search('verbose') !== -1);
   var stats;
   var spriteMesh;
-  var cullIntervalID;
-  var cullInterval = 15 * 1000; // remove players after 15 seconds of inactivity
-  var gestureMapping = {
-    'shake': 'changePlayerRing'
-  };
 
   var threeInstallationMock = {
     stats: null,
@@ -784,13 +778,6 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       container.appendChild(stats.domElement);
 
       threeInstallationMock.animate();
-      if (o.mode === 'listen') {
-        remote.init();
-
-        threeInstallationMock.listen();
-
-        remote.registerSelfAs('installation');
-      }
 
       threeInstallationMock.insertControls();
 
@@ -800,7 +787,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     arrangeRingsRadially: function (numberOfRings) {
       var i;
       for (i = 1; i < numberOfRings; i++) {
-        ringMeshes.children[i].rotation.x = Math.PI * i / numberOfRings;
+        rings[i].rotation.x = Math.PI * i / numberOfRings;
       }
     },
 
@@ -905,126 +892,49 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       }
     },
 
-    listen: function(){
-      remote.onmessage(function (event) { // respond to node.js notifications coming back
-        var message = JSON.parse(event.data);
-        if (verbose) {
-          console.log('onmessage', event, message);
-        }
+    changePlayerPosition: function (pName, position, forceUpdate) {
+      var player = players[pName];
 
-        if (message.clients) {
-          console.log('adding existing clients', message.clients);
-          var i, l, client;
-          for (i = 0, l = message.clients.length; i < l; i++) {
-            client = message.clients[i];
-            threeInstallationMock.addNewPlayer('p' + client.id, {color: client.color});
-          }
-          return;
-        }
-
-        var senderID = message.senderID;
-        var pName = 'p' + senderID;
-
-        message.data = JSON.parse(message.data);
-
-        if (!players[pName]) {
-          console.log('onmessage', event, message);
-
-          if (!message.data.color) {
-            // todo, crude: ignoring, assuming it's a sensor message that raced ahead of the initial color message.
-            console.log('ignoring');
-            return;
-          }
-
-          threeInstallationMock.addNewPlayer(pName, message.data);
-
-          return;
-        }
-
-        var player = players[pName];
-        var position = player.position;
-
-        if (message.data.gesture !== void 0) {
-          var gesture = message.data.gesture;
-          if (typeof threeInstallationMock[gestureMapping[gesture]] === 'function') {
-            threeInstallationMock[gestureMapping[gesture]](player);
-          } else {
-          // todo: huh?
-            console.error('Unknown gesture', gesture, typeof gesture);
-            return;
-          }
-        } else {
-          position = Math.floor(message.data / 360 * parseInt(o.lpr));
-        }
-
-        //console.log('message.data, position', message.data, position);
-
-        // for now, only update the lights if user moves into a new light quadrant
-        if (message.data.gesture !== void 0 || position !== player.position) {
-          player.position = position;
-          var coords = player.circle.localToWorld(player.circle.geometry.vertices[position].clone());
-          player.sprite.position.x = coords.x;
-          player.sprite.position.y = coords.y;
-          player.sprite.position.z = coords.z;
-        }
-
-        // mark player as active (used by `cullIdlePlayers`)
-        player.active = true;
-      });
+      if (forceUpdate || position !== player.position) {
+        player.position = position;
+        var coords = player.circle.localToWorld(player.circle.geometry.vertices[position].clone());
+        player.sprite.position.x = coords.x;
+        player.sprite.position.y = coords.y;
+        player.sprite.position.z = coords.z;
+      }
     },
 
-    addNewPlayer: function (pName, playerData) {
-      var colorChoice = colorPallete[_.findIndex(colorPallete, {name: playerData.color})];
-      if (colorChoice === void 0) {
-        // todo: handle this
-        console.error('Unknown color, assigning random', pName, playerData);
-        colorChoice = _.sample(colorPallete);
-      }
-
-      if (typeof cullIntervalID === 'undefined') {
-        // This is only fired once, when the first player is added
-        cullIntervalID = window.setInterval(threeInstallationMock.cullIdlePlayers, cullInterval);
-      }
-
+    addNewPlayer: function (pName, whichRing, playerColor) {
       var i = coloredLights.children.length;
 
       // todo: why don't these sprites have lights?
-      threeInstallationMock.addSprite(colorChoice.hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
-
-      var whichRing = _.random(numOfRings - 1);
-
-      console.log('pName, i, whichRing', pName, i, whichRing);
+      threeInstallationMock.addSprite(playerColor.hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
 
       players[pName] = {
         sprite: coloredLights.children[i],
         position: 0,
         ring: whichRing,
-        circle: rings[whichRing].children[0],
-        active: true
+        circle: rings[whichRing].children[0]
       };
     },
 
-    changePlayerRing: function (player) {
-      var newRing = _.random(numOfRings - 2);
-      if (newRing >= player.ring) newRing += 1;
-      console.log('Changing rings: from ' + player.ring + ' to ' + newRing);
+    changePlayerRing: function (pName, newRing) {
+      var player = players[pName];
+
+      if (newRing === void 0) {
+        newRing = _.random(numOfRings - 2);
+        if (newRing >= player.ring) newRing += 1;
+      }
+
       player.ring = newRing;
       player.circle = rings[newRing].children[0];
+
+      return newRing;
     },
 
-    cullIdlePlayers: function () {
-      var playerID, player;
-
-      for (playerID in players) {
-        player = players[playerID];
-        if (player.active === false) {
-          console.log('Culling idle player "' + playerID + '"');
-          coloredLights.remove(players[playerID].sprite);
-          delete players[playerID];
-        } else {
-          player.active = false;
-        }
-      }
+    removePlayer: function (pName) {
+      coloredLights.remove(players[pName].sprite);
+      delete players[pName];
     },
 
     animate: function () {

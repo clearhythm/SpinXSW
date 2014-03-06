@@ -1,5 +1,5 @@
-define(['jquery', 'app/remote', 'app/utils'],
-function ($, remote, utils) {
+define(['jquery', 'app/remote', 'app/gameEngine', 'app/utils'],
+function ($, remote, gameEngine, utils) {
   var app = {
     init: function(){
       // Mobile Clients & Installation get different UIs and data logic
@@ -46,11 +46,14 @@ function ($, remote, utils) {
       $('#client_ui').hide();
       $('#installation_ui').show();
 
-      require(['app/threeInstallationMock'], function (threeInstallationMock) {
+      gameEngine.init();
+      $('#installation_ui h1').hide();
+
+      /* require(['app/threeInstallationMock'], function (threeInstallationMock) {
         if (threeInstallationMock.init()) {
           $('#installation_ui h1').hide();
         }
-      });
+      }); */
     }
   };
 
