@@ -3,14 +3,14 @@
 define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'app/remote', 'app/utils', 'lodash'],
 function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, remote, utils, _) {
   var allOptions = {
-    configs: [2, 3, '3,1', '3,2(staggered)', 4, '4,1', '4,2(staggered)', 5, '5,1', 6, '6,1', '6,2(scaled)', '6,3(tetra)', 7, '7,1', '7,2', 8, '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', '8,6', 9, '9,1', '9,2(options)', '9,3(globe)', '9,4(globe)', '9,5(globe)', '9,6(globe)', '10,1', '12,1(tetra)', '12,2', 16],
+    configs: [2, 3, '3,1', '3,2(staggered)', 4, '4,1', '4,2(staggered)', 5, '5,1', 6, '6,1', '6,2(scaled)', '6,3(tetra)', 7, '7,1', '7,2', '7,3(options)', 8, '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', '8,6', 9, '9,1', '9,2(options)', '9,3(globe)', '9,4(globe)', '9,5(globe)', '9,6(globe)', '10,1', '12,1(tetra)', '12,2', 16],
     modes: ['auto', 'full', 'random', 'listen'],
     //lprs: {min: 2, max: 960},
     sss: ['soft', 'star'],
     showRingss: [true, false],
     useDirectionalLights: [true, false],
     useAmbientLights: [true, false],
-    hueTypes: [0, 1, 2, 3, 4]
+    hueTypes: [0, 1, 2, 3, 4, 5]
   };
   var defaultOptions = {
     config: 3,
@@ -257,6 +257,32 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           ringMeshes.children[4].children[0].rotation.x = Math.PI * 1 / 3;
           ringMeshes.children[4].children[1].rotation.x = Math.PI * 2 / 3;
           ringGroup2.rotation.y = Math.PI * 2 / 3;
+        } else  if (arrangement === 3) {
+          var angle1 = _.random(1, 7);
+
+          angle1 = parseFloat(prompt('angle1 (range: 1-7)', angle1));
+          window.setTimeout(function(){ // hack
+            $('select[name=config]').after('(' + angle1 + ')');
+          }, 0);
+
+          rings[0].rotation.x = Math.PI * angle1 / 16;
+
+          ringMeshes.remove(rings[1]);
+          ringMeshes.remove(rings[2]);
+          ringMeshes.remove(rings[3]);
+          ringMeshes.remove(rings[4]);
+          ringMeshes.remove(rings[5]);
+          ringMeshes.remove(rings[6]);
+
+          var ringGroups = new THREE.Object3D();
+
+          for (i = 1, l = numOfRings; i < l; i++) {
+            rings[i].rotation.x = Math.PI * angle1 / 16;
+            ringGroups.add(new THREE.Object3D());
+            ringGroups.children[i - 1].add(rings[i]);
+            ringGroups.children[i - 1].rotation.y = Math.PI * i / 3.5;
+          }
+          ringMeshes.add(ringGroups);
         }
       } else if (numOfRings === 8) {
         if (arrangement === 1) {
@@ -360,8 +386,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           var angle2 = _.random(1, 7);
 
           angle2 = prompt('angle1, angle2 (1-7)', angle1 + ',' + angle2);
-          angle1 = parseInt(angle2.split(',')[0]);
-          angle2 = parseInt(angle2.split(',')[1]);
+          angle1 = parseFloat(angle2.split(',')[0]);
+          angle2 = parseFloat(angle2.split(',')[1]);
           window.setTimeout(function(){ // hack
             $('select[name=config]').after('(' + angle1 + ',' + angle2 + ')');
           }, 0);
@@ -459,7 +485,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         } else if (arrangement === 2) {
           var angle1 = _.random(1, 7);
 
-          angle1 = parseInt(prompt('angle1 (range: 1-7)', angle1));
+          angle1 = parseFloat(prompt('angle1 (range: 1-7)', angle1));
           window.setTimeout(function(){ // hack
             $('select[name=config]').after('(' + angle1 + ')');
           }, 0);
@@ -690,6 +716,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           var hueLength = _.random(0.001, 5);
         }
 
+        var lightness = 0.5;
+
         for (i = 0, l = numOfRings; i < l; i++) {
           var circle = circles[i].children[0];
 
@@ -715,9 +743,14 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
               var hue = Math.random();
             } else if (o.hueType === 4) {
               hue = utils.constrainPeriodic(hue + _.random(-0.05, 0.05), true);
+            } else if (o.hueType === 5) {
+              var hue = Math.random();
+              lightness = _.random(-1.5, 0.5);
             }
 
-            threeInstallationMock.addSprite(hue, 1, 0.5, coords.x, coords.y, coords.z, 1, false);
+            if (lightness > 0) {
+              threeInstallationMock.addSprite(hue, 1, lightness, coords.x, coords.y, coords.z, 1, false);
+            }
           }
         }
       } else if (o.mode === 'random') {
@@ -966,7 +999,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         sprite: coloredLights.children[i],
         position: 0,
         ring: whichRing,
-        circle: ringMeshes.children[whichRing].children[0],
+        circle: rings[whichRing].children[0],
         active: true
       };
     },
@@ -976,7 +1009,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       if (newRing >= player.ring) newRing += 1;
       console.log('Changing rings: from ' + player.ring + ' to ' + newRing);
       player.ring = newRing;
-      player.circle = ringMeshes.children[newRing].children[0];
+      player.circle = rings[newRing].children[0];
     },
 
     cullIdlePlayers: function () {
