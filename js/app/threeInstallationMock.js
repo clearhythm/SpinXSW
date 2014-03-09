@@ -4,8 +4,7 @@ define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/thr
 function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, utils, _) {
   var allOptions = {
     configs: [2, 3, '3,1', '3,2(staggered)', 4, '4,1', '4,2(staggered)', 5, '5,1', 6, '6,1', '6,2(scaled)', '6,3(tetra)', 7, '7,1', '7,2', '7,3(options)', 8, '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', '8,6', 9, '9,1', '9,2(options)', '9,3(globe)', '9,4(globe)', '9,5(globe)', '9,6(globe)', '10,1', '12,1(tetra)', '12,2', 16],
-    modes: ['auto', 'full', 'random', 'listen'],
-    //lprs: {min: 2, max: 960},
+    modes: ['auto', 'full', 'random', 'listen', 'listen2'],
     sss: ['soft', 'star'],
     showRingss: [true, false],
     useDirectionalLights: [true, false],
@@ -13,10 +12,10 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     hueTypes: [0, 1, 2, 3, 4, 5]
   };
   var defaultOptions = {
-    config: 3,
-    mode: 'auto', // 'auto', 'full', 'random', 'listen'
+    config: '7,2',
+    mode: 'auto',
     lpr: 128, // Lights per ring
-    ss: 'soft', // sprite style: 'soft', 'star',
+    ss: 'soft',
     cover: false, // light cover
     showRings: true,
     lightOnly: false, // no sprite
@@ -47,6 +46,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
   var ringMeshes = new THREE.Object3D();
   var circles = [];
   var coloredLights = new THREE.Object3D();
+  var coloredLightsLength;
   var counter = 0;
   var counterMax;
   var players = {};
@@ -91,6 +91,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       circleGeometry = geometry.makeCircle({ radius: o.ringRadius + o.spriteGap, segments: parseInt(o.lpr) });
       circle = new THREE.Line(circleGeometry, material.line);
       circle.rotation.x = Math.PI / 2;
+      circle.rotation.z = Math.PI * 1 / 2; // changes the starting position to the bottom (as per physical sculpture)
       circle.visible = false;
       counterMax = circle.geometry.vertices.length - 1;
       ringMesh.add(circle); // .clone()?
@@ -227,20 +228,20 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           ringMeshes.children[4].children[2].rotation.x = Math.PI * 3 / 4;
           ringGroup.rotation.z = Math.PI * 1 / 2;
         } else  if (arrangement === 2) {
-          ringMeshes.children[1].rotation.x = Math.PI * 1 / 3;
-          ringMeshes.children[2].rotation.x = Math.PI * 2 / 3;
+          ringMeshes.children[0].rotation.x = Math.PI * 1 / 3;
+          ringMeshes.children[1].rotation.x = Math.PI * 2 / 3;
 
           var ringGroup = new THREE.Object3D();
+          ringMeshes.remove(rings[2]);
           ringMeshes.remove(rings[3]);
-          ringMeshes.remove(rings[4]);
+          ringGroup.add(rings[2]);
           ringGroup.add(rings[3]);
-          ringGroup.add(rings[4]);
 
           var ringGroup2 = new THREE.Object3D();
+          ringMeshes.remove(rings[4]);
           ringMeshes.remove(rings[5]);
-          ringMeshes.remove(rings[6]);
+          ringGroup2.add(rings[4]);
           ringGroup2.add(rings[5]);
-          ringGroup2.add(rings[6]);
 
           ringMeshes.add(ringGroup);
           ringMeshes.children[3].children[0].rotation.x = Math.PI * 1 / 3;
@@ -712,8 +713,15 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
         var lightness = 0.5;
 
+
         for (i = 0, l = numOfRings; i < l; i++) {
-          var circle = circles[i].children[0];
+          if (o.config === '7,2') {
+            var translation = [0, 5, 3, 1, 4, 2, 6];
+            var ringIndex = translation[i];
+          } else {
+            var ringIndex = i;
+          }
+          var circle = circles[ringIndex].children[0];
 
           if (o.hueType === 1) {
             var hueStart = Math.random();
@@ -747,6 +755,24 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
             }
           }
         }
+      } else if (o.mode === 'listen2') {
+        scene.updateMatrixWorld();
+
+        for (i = 0, l = numOfRings; i < l; i++) {
+          if (o.config === '7,2') {
+            var translation = [0, 5, 3, 1, 4, 2, 6];
+            var ringIndex = translation[i];
+          } else {
+            var ringIndex = i;
+          }
+          var circle = circles[ringIndex].children[0];
+
+          for (j = 0, m = counterMax; j < m; j++) {
+            var coords = circle.localToWorld(circle.geometry.vertices[j].clone());
+
+            threeInstallationMock.addSprite(0.65, 1, 0.75, coords.x, coords.y, coords.z, 1, false);
+          }
+        }
       } else if (o.mode === 'random') {
         scene.updateMatrixWorld();
         for (i = 0, l = numOfRings; i < l; i++) {
@@ -767,6 +793,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           }
         }
       }
+
+      coloredLightsLength = coloredLights.children.length;
 
       scene.add(coloredLights);
 
@@ -892,6 +920,22 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       }
     },
 
+    setLight: function (i, r, g, b) {
+      if (coloredLightsLength > i + 1) {
+        coloredLights.children[i].material.color.setRGB(r / 255, g / 255, b / 255);
+        //console.log('Set color of light ' + i);
+      } // else silently ignore
+    },
+
+    setAllLights: function (r, g, b) {
+      //var startTime = Date.now();
+      var i, l;
+      for (i = 0, l = coloredLightsLength; i < l; i++) {
+        coloredLights.children[i].material.color.setRGB(r / 255, g / 255, b / 255);
+      }
+      //console.log('setAllLights took', Date.now() - startTime, 'ms');
+    },
+
     changePlayerPosition: function (pName, position, forceUpdate) {
       var player = players[pName];
 
@@ -916,6 +960,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         ring: whichRing,
         circle: rings[whichRing].children[0]
       };
+
+      coloredLightsLength += 1;
     },
 
     changePlayerRing: function (pName, newRing) {
@@ -934,11 +980,14 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
 
     removePlayer: function (pName) {
       coloredLights.remove(players[pName].sprite);
+      coloredLightsLength -= 1;
       delete players[pName];
     },
 
     animate: function () {
       var i, l, circle, coords, j, m;
+
+      if (window.pauseAnimation) { window.startAnimation = threeInstallationMock.animate; return; }
 
       window.requestAnimationFrame(threeInstallationMock.animate);
       controls.update();
