@@ -1,8 +1,8 @@
 define(['app/remote', 'app/utils', 'lodash'],
 function (remote, utils, _) {
   var defaultOptions = {
-    config: 3,
-    mode: 'auto', // 'auto', 'full', 'random', 'listen'
+    config: '7,2',
+    mode: 'auto', // 'auto', 'full', 'random', 'listen', 'listen2'
     lpr: 128 // Lights per ring
   };
   var o = {};
@@ -44,6 +44,8 @@ function (remote, utils, _) {
       }
 
       gameEngine.startLightEngine();
+
+      window.listener2 = gameEngine.listener2; // temp, debugging
     },
 
     startLightEngine: function(){
@@ -56,6 +58,10 @@ function (remote, utils, _) {
             remote.init();
             gameEngine.listen();
             remote.registerSelfAs('installation');
+          } else if (o.mode === 'listen2') {
+            remote.init();
+            gameEngine.listen2();
+            remote.registerSelfAs('installation2');
           }
         }
       });
@@ -118,6 +124,60 @@ function (remote, utils, _) {
         // mark player as active (used by `cullIdlePlayers`)
         player.active = true;
       });
+    },
+
+    listen2: function(){
+      remote.onmessage(gameEngine.listener2); // respond to node.js notifications coming back
+    },
+
+    listener2: function (event) {
+      var startTime = Date.now();
+
+      var msg = event.data;
+      //console.log( 'Got ' + msg );
+
+      var c = 0;
+      var n = msg.length;
+      var remaining;
+
+      var lightsChanged = 0;
+
+      while ( c < n ) {
+        remaining = n - c;
+
+        if ( ( remaining >= 15 ) && ( msg.substring( c, c + 2 ) == '#L' ) ) {
+          // e.g. #L0078228028017 --> 0078, 228, 028, 017
+          var l = parseInt( msg.substring( c + 2, c + 6 ) );
+          var r = parseInt( msg.substring( c + 6, c + 9 ) );
+          var g = parseInt( msg.substring( c + 9, c + 12 ) );
+          var b = parseInt( msg.substring( c + 12, c + 15 ) );
+
+          //console.log( 'Got Light ' + l + ', r=' + r + ', g=' + g + ', b=' + b );
+          lightEngine.setLight( l, r, g, b );
+          lightsChanged += 1;
+          c += 15;
+        } else if ( ( remaining >= 11 ) && ( msg.substring( c, c + 11 ) == '#F000000000' ) ) {
+          // todo: support more colors?
+          lightEngine.setAllLights( 0, 0, 0 );
+          c += 11;
+        } else if ( ( remaining >= 2 ) && ( msg.substring( c, c + 2 ) == '#D' ) ) {
+          console.log( 'Got TERMINATE' );
+          c += 2;
+          break;
+        } else if ( ( remaining >= 2 ) && ( msg.substring( c, c + 2 ) == '#N' ) ) {
+          console.log( 'Got #N, terminating' );
+          c += 2;
+          break;
+        } else if ( ( remaining >= 2 ) && ( msg.substring( c, c + 2 ) == '##' ) ) { // skip first of double pounds if any
+          c += 1;
+        } else {
+          console.error('Huh?', msg.substring( c, c + 15 ));
+          break;
+        }
+        //console.log( 'C=' + c + ', N=' + n + ', REM: ' + ( n - c ) );
+      }
+
+      console.log('lightsChanged', lightsChanged, 'took', Date.now() - startTime, 'ms');
     },
 
     addNewPlayer: function (pName, playerData) {
