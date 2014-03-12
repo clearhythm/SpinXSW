@@ -19,9 +19,88 @@ function ($, shake, remote) {
   var score = 0;
   var lastAngle;
 
+  var slideAIntervalID;
+  var slideBIntervalID;
+  var previousIntensityA;
+  var previousIntensityB;
+
   var clientUI = {
     init: function(){
-      if (window.DeviceOrientationEvent) {
+      if (window.location.search.search('forceclient') !== -1) {
+        if (window.location.search.search('heroku') !== -1) {
+          remote.init('ws://quiet-earth-2640.herokuapp.com');
+        } else {
+          remote.init();
+        }
+
+        $('head link:first').before('<link rel="stylesheet" href="/js/lib/jquery-ui-smoothness-1.10.4.css" />');
+
+        require(['jqueryui'], function (jqueryui) {
+          $('#sliders').show();
+          $('#intensityA').slider({
+            value: 500,
+            max: 1000,
+            start: function( event, ui ) {
+              previousIntensityA = ui.value;
+              if (slideAIntervalID !== void 0) {
+                window.clearInterval(slideAIntervalID);
+              }
+              slideAIntervalID = window.setInterval(function(){
+                var newValue = $('#intensityA').slider( 'value' );
+                if (newValue !== previousIntensityA) {
+                  remote.send({ intensityA: newValue });
+                  //remote.send({ alpha: newValue * 359 / 100 });
+                }
+                previousIntensityA = newValue;
+              }, 50);
+            },
+            stop: function( event, ui ) {
+              if (slideAIntervalID !== void 0) {
+                window.clearInterval(slideAIntervalID);
+              }
+
+              if (ui.value !== previousIntensityA) {
+                remote.send({ intensityA: ui.value });
+                //remote.send({ alpha: ui.value * 359 / 100 });
+              }
+            }
+          });
+
+          $('#intensityB').slider({
+            value: 500,
+            max: 1000,
+            orientation: 'vertical',
+            start: function( event, ui ) {
+              previousIntensityB = ui.value;
+              if (slideBIntervalID !== void 0) {
+                window.clearInterval(slideBIntervalID);
+              }
+              slideBIntervalID = window.setInterval(function(){
+                var newValue = $('#intensityB').slider( 'value' );
+                if (newValue !== previousIntensityB) {
+                  remote.send({ intensityB: newValue });
+                }
+                previousIntensityB = newValue;
+              }, 50);
+            },
+            stop: function( event, ui ) {
+              if (slideBIntervalID !== void 0) {
+                window.clearInterval(slideBIntervalID);
+              }
+
+              if (ui.value !== previousIntensityB) {
+                remote.send({ intensityB: ui.value });
+              }
+            }
+          });
+        });
+
+        $('#shake').on('click', function(e){
+          remote.send({ gesture: 'shake' });
+        });
+
+        remote.registerSelfAs('client');
+      } else if (window.DeviceOrientationEvent) {
         remote.init();
 
         remote.onmessage(function (event) {
@@ -30,7 +109,7 @@ function ($, shake, remote) {
           console.log('onmessage', event, message);
 
           if (message.clientTypeCounts) {
-            if (message.clientTypeCounts.installation > 0) {
+            if (true || message.clientTypeCounts.installation > 0) { // todo: get this working again?
               clientUI.pickColor();
             } else {
               clientUI.fallback(2);
@@ -110,7 +189,7 @@ function ($, shake, remote) {
     },
 
     sendSensorData: function (deg) {
-      remote.send(deg);
+      remote.send({alpha: deg});
     },
 
     showCurrentAngle: function (deg) {

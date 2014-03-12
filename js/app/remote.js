@@ -3,8 +3,8 @@ function (ReconnectingWebSocket, _) {
   var ws;
 
   var remote = {
-    init: function(){
-      var host = location.origin.replace(/^http/, 'ws');
+    init: function (host) {
+      if (host === void 0) host = location.origin.replace(/^http/, 'ws');
       ws = new ReconnectingWebSocket(host);
       window.ws = ws;
     },

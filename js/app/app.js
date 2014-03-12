@@ -3,7 +3,7 @@ function ($, remote, gameEngine, utils) {
   var app = {
     init: function(){
       // Mobile Clients & Installation get different UIs and data logic
-      if (utils.isMobile){
+      if (window.location.search.search('forceclient') !== -1 || utils.isMobile) {
         app.initSwitcher('client');
         app.showClientUI();
       } else {

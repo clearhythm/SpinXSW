@@ -5,6 +5,8 @@ require.config({
     lodash: ['//cdnjs.cloudflare.com/ajax/libs/lodash.js/2.4.1/lodash.min', 'lib/lodash-2.4.1.min'], // Very similar to underscore
     shake: 'lib/shake.9fb2c4d3ab', // todo: could use a shim!
 
+    jqueryui: ['//ajax.googleapis.com/ajax/libs/jqueryui/1.10.4/jquery-ui.min', 'lib/jquery-ui-1.10.4.min'],
+
     // THREE core + components (add-ons & plugins)
     three: 'lib/three/three-aggregate',
     threeCore: 'lib/three/three-r65.min',

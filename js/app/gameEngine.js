@@ -61,7 +61,7 @@ function (remote, utils, _) {
           } else if (o.mode === 'listen2') {
             remote.init();
             gameEngine.listen2();
-            remote.registerSelfAs('installation2');
+            remote.registerSelfAs('installation');
           }
         }
       });
@@ -133,7 +133,8 @@ function (remote, utils, _) {
     listener2: function (event) {
       var startTime = Date.now();
 
-      var msg = event.data;
+      var msg = JSON.parse(event.data).data;
+      if (msg === void 0 ) return;
       //console.log( 'Got ' + msg );
 
       var c = 0;

@@ -13,6 +13,11 @@ h1 { margin: 80px 0; font-size: 300% }
 
 .achievement { font-size: 6em; }
 
+#sliders { width: 20em; height: 20em; position: relative; }
+#intensityA { margin-left: 1.5em; }
+#intensityB { margin-top: 0.75em; height: 17em; }
+#shake { font-size: 2em; position: absolute; left: 10%; top: 10%; }
+
 /* Virtual Light Display */
 #lights { display: block; margin: 50px auto 0 auto; }
 #lights .light { position: relative; float: left; margin: 0 10px; width: 24px; height: 24px; border: 1px solid #fff; border-radius: 24px; -moz-border-radius: 24px; background-color: transparent; }
