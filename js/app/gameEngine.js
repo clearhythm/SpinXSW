@@ -2,8 +2,8 @@ define(['app/remote', 'app/utils', 'lodash'],
 function (remote, utils, _) {
   var defaultOptions = {
     config: '7,2',
-    mode: 'auto', // 'auto', 'full', 'random', 'listen', 'listen2'
-    lpr: 128 // Lights per ring
+    mode: 'listen', // 'rotate', 'fill', 'random', 'listen'
+    lpr: 240 // Lights per ring
   };
   var o = {};
   var players = {};
@@ -13,7 +13,7 @@ function (remote, utils, _) {
     'shake': 'changePlayerRing'
   };
   var lightEngine;
-  var colorPallete = [
+  var colorPalette = [
     {hue: 0,    name: 'red'},
     {hue: 0.30, name: 'green'},
     {hue: 0.66, name: 'blue'},
@@ -45,7 +45,7 @@ function (remote, utils, _) {
 
       gameEngine.startLightEngine();
 
-      window.listener2 = gameEngine.listener2; // temp, debugging
+      // window.listener = gameEngine.listener; // temp, debugging
     },
 
     startLightEngine: function(){
@@ -53,84 +53,18 @@ function (remote, utils, _) {
         lightEngine = threeInstallationMock;
         if (lightEngine.init()) {
           $('#installation_ui h1').hide();
-          
-          if (o.mode === 'listen') {
-            remote.init();
-            gameEngine.listen();
-            remote.registerSelfAs('installation');
-          } else if (o.mode === 'listen2') {
-            remote.init();
-            gameEngine.listen2();
-            remote.registerSelfAs('installation');
-          }
+          remote.init();
+          gameEngine.listen();
+          remote.registerSelfAs('installation');
         }
       });
     },
 
     listen: function(){
-      remote.onmessage(function (event) { // respond to node.js notifications coming back
-        var message = JSON.parse(event.data);
-
-        if (message.clients) {
-          console.log('adding existing clients', message.clients);
-          var i, l, client;
-          for (i = 0, l = message.clients.length; i < l; i++) {
-            client = message.clients[i];
-            gameEngine.addNewPlayer('p' + client.id, {color: client.color});
-          }
-          return;
-        }
-
-        var senderID = message.senderID;
-        var pName = 'p' + senderID;
-
-        message.data = JSON.parse(message.data);
-
-        if (!players[pName]) {
-          console.log('onmessage', event, message);
-
-          if (!message.data.color) {
-            // todo, crude: ignoring, assuming it's a sensor message that raced ahead of the initial color message.
-            console.log('ignoring');
-            return;
-          }
-
-          gameEngine.addNewPlayer(pName, message.data);
-
-          return;
-        }
-
-        var player = players[pName];
-        var position = player.position;
-
-        if (message.data.gesture !== void 0) {
-          var gesture = message.data.gesture;
-          if (typeof gameEngine[gestureMapping[gesture]] === 'function') {
-            gameEngine[gestureMapping[gesture]](pName);
-          } else {
-          // todo: huh?
-            console.error('Unknown gesture', gesture, typeof gesture);
-            return;
-          }
-        } else {
-          position = Math.floor(message.data / 360 * parseInt(o.lpr));
-        }
-
-        if (position !== player.position) {
-          lightEngine.changePlayerPosition(pName, position);
-          player.position = position;
-        }
-
-        // mark player as active (used by `cullIdlePlayers`)
-        player.active = true;
-      });
+      remote.onmessage(gameEngine.listener); // respond to node.js notifications coming back
     },
 
-    listen2: function(){
-      remote.onmessage(gameEngine.listener2); // respond to node.js notifications coming back
-    },
-
-    listener2: function (event) {
+    listener: function (event) {
       var startTime = Date.now();
 
       var msg = JSON.parse(event.data).data;
@@ -182,11 +116,11 @@ function (remote, utils, _) {
     },
 
     addNewPlayer: function (pName, playerData) {
-      var colorChoice = colorPallete[_.findIndex(colorPallete, {name: playerData.color})];
+      var colorChoice = colorPalette[_.findIndex(colorPalette, {name: playerData.color})];
       if (colorChoice === void 0) {
         // todo: handle this
         console.error('Unknown color, assigning random', pName, playerData);
-        colorChoice = _.sample(colorPallete);
+        colorChoice = _.sample(colorPalette);
       }
 
       if (typeof cullIntervalID === 'undefined') {

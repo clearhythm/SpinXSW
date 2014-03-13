@@ -1,10 +1,9 @@
 // todo: make sure all ".clones()" are necessary, and faster than just recreating geometry (probably)
-
 define(['detector', 'app/three/container', 'three', 'app/three/camera', 'app/three/controls', 'app/three/geometry', 'app/three/light', 'app/three/material', 'app/three/renderer', 'app/three/scene', 'lib/three/stats.min', 'app/utils', 'lodash'],
 function (Detector, container, THREE, camera, controls, geometry, light, material, renderer, scene, stats, utils, _) {
   var allOptions = {
     configs: [2, 3, '3,1', '3,2(staggered)', 4, '4,1', '4,2(staggered)', 5, '5,1', 6, '6,1', '6,2(scaled)', '6,3(tetra)', 7, '7,1', '7,2', '7,3(options)', 8, '8,1(scaled)', '8,2', '8,3', '8,4', '8,5(options)', '8,6', 9, '9,1', '9,2(options)', '9,3(globe)', '9,4(globe)', '9,5(globe)', '9,6(globe)', '10,1', '12,1(tetra)', '12,2', 16],
-    modes: ['auto', 'full', 'random', 'listen', 'listen2'],
+    modes: ['rotate', 'fill', 'random', 'listen'],
     sss: ['soft', 'star'],
     showRingss: [true, false],
     useDirectionalLights: [true, false],
@@ -13,8 +12,8 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
   };
   var defaultOptions = {
     config: '7,2',
-    mode: 'auto',
-    lpr: 128, // Lights per ring
+    mode: 'listen',
+    lpr: 240, // Lights per ring
     ss: 'soft',
     cover: false, // light cover
     showRings: true,
@@ -26,7 +25,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
     ringDepth: 0.5,
     spriteGap: 2, // distance between sprite and ring
     spriteScale: 6,
-    hueType: 0 // only affects o.mode === 'full'
+    hueType: 0 // only affects o.mode === 'fill'
   };
   var o = {};
   var ringRadius = 59;
@@ -696,7 +695,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
         spriteMesh.scale.set(o.spriteScale, o.spriteScale, o.spriteScale);
       }
 
-      if (o.mode === 'auto') {
+      if (o.mode === 'rotate') {
         for (i = 0, l = numOfRings; i < l; i++) {
           if (o.cover) {
             threeInstallationMock.addSprite(colorPallete[i % colorPallete.length].hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 5);
@@ -704,7 +703,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
             threeInstallationMock.addSprite(colorPallete[i % colorPallete.length].hue, 1, 0.5, 0, 0, 0, 1.5, true, 5, 375);
           }
         }
-      } else if (o.mode === 'full') {
+      } else if (o.mode === 'fill') {
         scene.updateMatrixWorld();
 
         if (o.hueType === 2) {
@@ -755,7 +754,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
             }
           }
         }
-      } else if (o.mode === 'listen2') {
+      } else if (o.mode === 'listen') {
         scene.updateMatrixWorld();
 
         for (i = 0, l = numOfRings; i < l; i++) {
@@ -897,7 +896,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
           $('input[name=ringDepth]', $form).remove();
         }
 
-        if ($('select[name=mode]', $form).val() !== 'full') {
+        if ($('select[name=mode]', $form).val() !== 'fill') {
           $('select[name=hueType]', $form).remove();
         }
 
@@ -992,7 +991,7 @@ function (Detector, container, THREE, camera, controls, geometry, light, materia
       window.requestAnimationFrame(threeInstallationMock.animate);
       controls.update();
 
-      if (o.mode === 'auto') {
+      if (o.mode === 'rotate') {
         if (counter % 4 === 0) {
           for (i = 0, l = numOfRings; i < l; i++) {
             circle = circles[i].children[0];
