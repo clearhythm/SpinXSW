@@ -78,9 +78,9 @@ var gameToLightEngine = {
   setLight: function (ring, position, color) {
     var r10 = Math.round(color.r * 1023 / 255);
     var g10 = Math.round(color.g * 1023 / 255);
-    var b10 = Math.round(color.r * 1023 / 255);
+    var b10 = Math.round(color.b * 1023 / 255);
 
-    console.log('gameToLightEngine.setLight: calling lightEngine.setLight', color, r10, g10, b10);
+    //console.log('gameToLightEngine.setLight: calling lightEngine.setLight', color, r10, g10, b10);
     lightEngine.setLight(ring, position, r10, g10, b10);
 
     dirty = true;

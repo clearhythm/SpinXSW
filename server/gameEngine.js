@@ -1,7 +1,10 @@
 var gameToLightEngine = require('./gameToLightEngine').gameToLightEngine;
-var wss;
+var tinycolor = require('./lib/tinycolor-0.9.17.min.js');
 var _ = require('./lib/lodash-2.4.1.min');
+
 useVirtual = true;
+
+var wss;
 
 var games = [
   { // 0: Move dot by alpha, shake to change rings
@@ -18,9 +21,13 @@ var games = [
   { // 3: Move dot by alpha, shake to change rings, with fading trail
     // Currently needs older light engine
     animateContinously: true
+  },
+  { // 4: Continuously moving dot, color change by tilt, persistant trail
+    // Currently needs older light engine
+    animateContinously: true
   }
 ];
-var whichGame = 1;
+var whichGame = 4;
 var gameOptions = games[whichGame];
 
 var players = {};
@@ -139,6 +146,15 @@ var gameEngine = {
           }
         }
       }, 250);
+    } else if (whichGame === 4) {
+      setInterval(function(){
+        var player, i, l, color;
+        for (pName in players) {
+          player = players[pName];
+          player.position++;
+          gameToLightEngine.setLight(player.ring, player.position, tinycolor({ h: player.intensityA / 10 + '%', s: 1, l: player.intensityB / 1000 }).toRgb());
+        }
+      }, 100);
     }
   },
 
@@ -222,6 +238,39 @@ var gameEngine = {
       } else {
         console.log('gameEngine.respondToClient: unknown message:', message);
       }
+    } else if (whichGame === 4) {
+      // Continuously moving dot, color change by tilt, persistant trail
+
+      if (players[pName] === void 0) {
+        gameEngine.addNewPlayer4(pName);
+      }
+      var player = players[pName];
+
+      if (message.intensityA !== void 0) {
+        player.intensityA = message.intensityA;
+      } else if (message.intensityB !== void 0) {
+        player.intensityB = message.intensityB;
+      } else if (message.gesture !== void 0 && message.gesture === 'shake') {
+        gameEngine.changePlayerRing4(pName);
+      } else {
+        console.log('gameEngine.respondToClient: unknown message:', message);
+      }
+    }
+  },
+
+  // todo: get this wired up again?
+  cullIdlePlayers: function () {
+    var playerID, player;
+
+    for (playerID in players) {
+      player = players[playerID];
+      if (player.active === false) {
+        console.log('Culling idle player "' + playerID + '"');
+        gameToLightEngine.setLight( player.ring, player.position, { r: 0, g: 0, b: 0} );
+        delete players[playerID];
+      } else {
+        player.active = false;
+      }
     }
   },
 
@@ -295,33 +344,18 @@ var gameEngine = {
 
   addNewPlayer1: function (pName) {
     players[pName] = {
-      intensityA: 50,
-      intensityB: 50,
+      intensityA: 500,
+      intensityB: 500,
       active: true
     };
-  },
-
-  cullIdlePlayers: function () {
-    var playerID, player;
-
-    for (playerID in players) {
-      player = players[playerID];
-      if (player.active === false) {
-        console.log('Culling idle player "' + playerID + '"');
-        gameToLightEngine.setLight( player.ring, player.position, { r: 0, g: 0, b: 0} );
-        delete players[playerID];
-      } else {
-        player.active = false;
-      }
-    }
   },
 
   // GAME 2
 
   addNewPlayer2: function (pName) {
     players[pName] = {
-      intensityA: 50,
-      intensityB: 50,
+      intensityA: 500,
+      intensityB: 500,
       active: true
     };
 
@@ -412,6 +446,28 @@ var gameEngine = {
     newColor.b = color.b * opacity;
 
     return newColor;
+  },
+
+  // GAME 4
+
+  addNewPlayer4: function (pName) {
+    var whichRing = _.random(numOfRings - 1);
+
+    players[pName] = {
+      position: 35,
+      ring: whichRing,
+      intensityA: 500,
+      intensityB: 500,
+      active: true
+    };
+  },
+
+  changePlayerRing4: function (pName) {
+    var player = players[pName];
+
+    var newRing = _.random(numOfRings - 2);
+    if (newRing >= player.ring) newRing += 1;
+    console.log('Changing rings: from ' + player.ring + ' to ' + newRing);
   },
 
 };
